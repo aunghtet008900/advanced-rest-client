@@ -663,6 +663,9 @@ AppServices.factory('HttpRequest', ['$q','ArcRequest', 'RequestValues','DBServic
     function($q, ArcRequest, RequestValues, DBService, $rootScope, APP_EVENTS,$http,ChromeTcp) {
         $rootScope.$on(APP_EVENTS.START_REQUEST, function(e){
             runRequest()
+            .then(function(e){
+                $rootScope.$broadcast(APP_EVENTS.END_REQUEST, e);
+            })
             .catch(function(e){
                 $rootScope.$broadcast(APP_EVENTS.REQUEST_ERROR, e);
             });
@@ -687,8 +690,9 @@ AppServices.factory('HttpRequest', ['$q','ArcRequest', 'RequestValues','DBServic
         var deferred = $q.defer();
         
         function onRequestObjectReady(request){
+            
             request.addEventListener('load', function(e){
-                $rootScope.$broadcast(APP_EVENTS.END_REQUEST, e);
+                deferred.resolve(e);
             }).addEventListener('error', function(e){ 
                 console.log('ERROR',e);
                 if(e&&e[0]&&!!e[0].code){
@@ -696,7 +700,6 @@ AppServices.factory('HttpRequest', ['$q','ArcRequest', 'RequestValues','DBServic
                         if(result && result.data){
                             if(e[0].code in result.data){
                                 console.error("Error occured:", result.data[e[0].code]);
-                                
                                 var message = e[0].message + "\n" + result.data[e[0].code];
                                 deferred.reject({
                                     'code': e[0].code,
@@ -710,7 +713,7 @@ AppServices.factory('HttpRequest', ['$q','ArcRequest', 'RequestValues','DBServic
                 }
                 
             }).addEventListener('timeout', function(e){ 
-                //console.log('TIMEOUT',e);
+                deferred.reject({'timeout':true});
             }).addEventListener('start', function(e){ 
                 //console.log('START',e);
             }).addEventListener('progress', function(e){ 
@@ -720,8 +723,9 @@ AppServices.factory('HttpRequest', ['$q','ArcRequest', 'RequestValues','DBServic
             }).addEventListener('upload', function(e){ 
                 //console.log('UPLOAD',e);
             }).addEventListener('abort', function(e){ 
-                console.log('ABORT',e);
-            }).send();
+                deferred.reject({'abort':true});
+            })
+            .send();
         }
         try{
             RequestValues.store();
@@ -764,7 +768,7 @@ AppServices.factory('HttpRequest', ['$q','ArcRequest', 'RequestValues','DBServic
             'url': requestObject.url,
             'method': requestObject.method,
             'timeout': 30000,
-            'debug': true
+            'debug': false
         };
         
         if(RequestValues.hasPayload() && requestObject.payload){

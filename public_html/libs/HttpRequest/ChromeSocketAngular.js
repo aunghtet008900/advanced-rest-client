@@ -375,7 +375,7 @@ angular.module('chrome.http', [])
             })
             .catch(function(reason){
                 if(context.debug){
-                    context.error('Can\'t create socket. Error code: ', reason);
+                    console.error('Can\'t create socket. Error code: ', reason);
                 }
                 defered.reject({
                     'code': reason,
@@ -1329,7 +1329,14 @@ angular.module('chrome.http', [])
     };
     HttpRequest.prototype.send = function() {
         if(this.aborted) return;
-        this.request.send();
+        var context = this;
+        this.request.send()
+        .then(function(){
+            context._start(arguments);
+        })
+        .catch(function(error){
+            context._error(error);
+        });
     };
     HttpRequest.prototype.abort = function() {
         if(this.aborted) return;
@@ -1341,7 +1348,7 @@ angular.module('chrome.http', [])
         if(this.aborted) return;
         if(this.started) return;
         this.started = true;
-        this.dispatchEvent('start', arguments);
+        this.dispatchEvent('start');
     };
     HttpRequest.prototype._uploadstart = function() {
         if(this.aborted) return;

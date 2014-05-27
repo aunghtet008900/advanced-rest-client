@@ -277,10 +277,10 @@ ArcDirectives.directive('responseHeaders', ['Definitions',function(Definitions) 
         controller: function($scope) {
             $scope.defs = {};
             $scope.addPopover = function(e){
-                if(e.currentTarget.dataset.popover){
+                if(e.currentTarget.dataset.popoverExists){
                     return;
                 }
-                e.currentTarget.dataset.popover = true;
+                e.currentTarget.dataset.popoverExists = true;
                 var name = e.currentTarget.querySelector('.header-name').textContent.toLowerCase();
                 if(name.trim() === '') return;
                 
@@ -295,7 +295,15 @@ ArcDirectives.directive('responseHeaders', ['Definitions',function(Definitions) 
                     }
                 };
                 var setPopover = function(header){
-                    if(!header) return;
+                    if(!header) {
+                        $scope.defs[name] = '';
+                        e.currentTarget.setAttribute('popover','');
+                        e.currentTarget.removeAttribute('popover-title');
+                        e.currentTarget.removeAttribute('popover-append-to-body');
+                        e.currentTarget.removeAttribute('popover-placement');
+                        e.currentTarget.removeAttribute('popover-trigger');                        
+                        return;
+                    }
                     $scope.defs[header.key.toLowerCase()] = header.desc;                    
                 };
                 
