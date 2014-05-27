@@ -128,13 +128,16 @@
                 </div>
                 <tabset>
                     <tab heading="Raw data">
-                        <pre id="parsedOutput" ng-bind-html="data.parsedResponse" class="cm-s-default select-text" ng-click="htmlControl($event)"></pre>
+                        <pre id="parsedOutput" ng-hide="!!!data.parsedResponse" ng-bind-html="data.parsedResponse" class="cm-s-default select-text" ng-click="htmlControl($event)"></pre>
+                        <span class="response-parsing" ng-hide="!!data.parsedResponse">Parsing response...</span>
                     </tab>
                     <tab heading="JSON" ng-if="hasJson()" select="jsonOpen()">
-                        <div ng-bind-html="data.parsedJson" id="JSON-parser" class="select-text" ng-click="jsonControl($event)"></div>
+                        <div ng-hide="!!!data.parsedJson" ng-bind-html="data.parsedJson" id="JSON-parser" class="select-text" ng-click="jsonControl($event)"></div>
+                        <span class="response-parsing" ng-hide="!!data.parsedJson">Parsing response...</span>
                     </tab>
                     <tab heading="XML" ng-if="hasXml()" select="xmlOpen()">
-                        <div ng-bind-html="data.parsedXml" id="XML-parser" class="select-text" ng-click="xmlControl($event)"></div>
+                        <div ng-hide="!!!data.parsedXml" ng-bind-html="data.parsedXml" id="XML-parser" class="select-text" ng-click="xmlControl($event)"></div>
+                        <span class="response-parsing" ng-hide="!!data.parsedXml">Parsing response...</span>
                     </tab>
                 </tabset>
             </div>
