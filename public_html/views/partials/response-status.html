@@ -7,7 +7,7 @@
             <div class="">
                 <div class="pull-left">
                     <h4 class="select-text">
-                        <span class="label label-success">{{status.code}} {{status.message}}</span>
+                        <span class="label " ng-class="{'label-success': (status.code < 300), 'label-info': (status.code >= 300 && status.code < 400), 'label-warning': (status.code >= 400 && status.code < 500), 'label-danger': (status.code >= 500) }">{{status.code}} {{status.message}}</span>
                         <span class="label label-default">{{status.time}} ms</span>
                     </h4>
                 </div>
