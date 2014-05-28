@@ -240,7 +240,15 @@ angular.module('chrome.http', [])
                 /**
                  * Time of request received
                  */
-                messageReceived: 0
+                messageReceived: 0,
+                /**
+                 * Start transmitting message timestamp
+                 */
+                startTimestamp: 0,
+                /**
+                 * Stop receiving http response | error timestamp
+                 */
+                endTimestamp: 0
             }
         };
         /**
@@ -499,6 +507,7 @@ angular.module('chrome.http', [])
             this.request.message = this.request.data.httpmessage;
         }
         var context = this;
+        this.connection.metrics.startTimestamp = Date.now();
         chrome.sockets.tcp.send(this.connection.socketId, this.request.message, function(sendInfo) {
             context.connection.metrics.messageSent = performance.now();
             if(context.debug){
@@ -608,6 +617,7 @@ angular.module('chrome.http', [])
         }
 
         if (this.response.ended) {
+            this.connection.metrics.endTimestamp = Date.now();
             var responseStr = this._getMessageString();
             this.response.data.response = responseStr;
             this.response.data.responseTime = this.connection.metrics.messageReceived - this.connection.metrics.messageSent;
@@ -1112,9 +1122,21 @@ angular.module('chrome.http', [])
         if(this.debug){
             console.log(performance.now(), 'Response ready');
         }
+        
+        var connectionInfo = {
+            'metrics': {
+                start: this.connection.metrics.startTimestamp,
+                end: this.connection.metrics.endTimestamp
+            },
+            'aborted': this.connection.aborted,
+            'timeout': this.connection.isTimeout
+        };
+        
+        
         this.dispatchEvent('load', {
             'request': this.request.data,
-            'response': this.response.data
+            'response': this.response.data,
+            'connection': connectionInfo
         });
     };
     
@@ -1146,6 +1168,7 @@ angular.module('chrome.http', [])
         }
         
         if(this.connection.socketId === info.socketId){
+            this.connection.metrics.endTimestamp = Date.now();
             if(info.resultCode === -100){ //SSL connections are not supported yet.
                 this.dispatchEvent('error', {
                     'code': -100,
@@ -1371,15 +1394,16 @@ angular.module('chrome.http', [])
         this.aborted = true;
         this.dispatchEvent('timeout', arguments);
     };
-    HttpRequest.prototype._load = function() {
+    HttpRequest.prototype._load = function(e) {
         if(this.aborted) return;
-        var response = this.request.response.data;
+        var response = e.response;
         
         function finish(){
             var result = {
                 'redirects': this.redirect,
-                'request': this.request.request.data,
-                'response': this.request.response.data,
+                'request': e.request,
+                'response': response,
+                'connection': e.connection,
                 'destination': this.request.request.data.url
             };
             this.dispatchEvent('load', result);

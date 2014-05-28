@@ -431,25 +431,39 @@ AppServices.factory('CodeMirror', ['RequestValues',function(RequestValues) {
 
 /**
  * Service to handle operation on current Request object.
- * It is responsible for managing data synchronization between services and UI and for save/restore actions. 
+ * This service keep
  */
-AppServices.factory('ArcRequest', ['$q','RequestValues','DriveService','DBService', '$rootScope', 'APP_EVENTS',
-    function($q,RequestValues,DriveService,DBService,$rootScope, APP_EVENTS) {
+AppServices.factory('HistoryValue', ['$q','RequestValues','DriveService','DBService', '$rootScope', 'APP_EVENTS', 'Filesystem', 
+    function($q,RequestValues,DriveService,DBService,$rootScope, APP_EVENTS, Filesystem) {
         $rootScope.$on(APP_EVENTS.errorOccured, function(e, msg, reason){});
+        
+        var service = {};
+        
+        var getCurrent = function(){
+            var deferred = $q.defer();
+            if(service.current !== null){
+                deferred.resolve(service.current);
+            } else {
+                deferred.resolve(create({'store_location': 'history'}));
+            }
+            return deferred.promise;
+        };
+        
+        
         /**
          * @ngdoc method
-         * @name ArcRequest.create
+         * @name HistoryValue.create
          * @function
          * 
-         * @description Create new ArcRequest object and populate with values.
-         * This function must be called before calling ArcRequest.save()
+         * @description Create new HistoryValue object and populate with values.
+         * This function must be called before calling HistoryValue.save()
          * to create save object.
          * @param {Object} params Initial metadata for object.
          *  'store_location' (String), required, - either 'history','local' or 'drive'
          *  'name' (String), required if [store_location] is 'local' or 'drive',
          *  'project_name' (String), optional - Associated project name.
          * @example 
-         *  ArcRequest.create({'store_location': 'local','name':'My request'});
+         *  HistoryValue.create({'store_location': 'local','name':'My request'});
          * 
          * 
          * @returns {undefined}
@@ -457,92 +471,74 @@ AppServices.factory('ArcRequest', ['$q','RequestValues','DriveService','DBServic
         var create = function(params){
             
             if(!'store_location' in params){
-                throw "You must add store_location to create ArcRequest object";
+                throw "You must add store_location to create HistoryValue object";
             }
             if((params.store_location === 'local' || params.store_location === 'drive') && !params.name){
-                throw "You must specify file name to create ArcRequest object";
+                throw "You must specify file name to create HistoryValue object";
             }
             
             service.current = {};
-            _fillCurrent();
             service.current.store_location = params.store_location;
+            service.current.har = null;
             if(params.name){
                 service.current.name = params.name;
             }
             if(params.project_name){
                 service.current.project_name = params.project_name;
             }
-        };
-        
-        var _fillCurrent = function(){
-            service.current.request = {
-                url: RequestValues.url,
-                method: RequestValues.method,
-                headers: RequestValues.headers.value,
-                payload: RequestValues.payload.value,
-                files: RequestValues.files
-            };
+            return service.current;
         };
         
         /**
          * @ngdoc method
-         * @name ArcRequest.store
+         * @name HistoryValue.store
          * @function
          * 
          * @description Store current object into selected storage (depending on 'store_location').
          * 
          * @example 
-         *  ArcRequest.store().then(function(storedObject){ ... });
+         *  HistoryValue.store().then(function(storedObject){ ... });
          * 
          * 
          * @returns {$q@call;defer.promise} The promise with stored object.
          */
         var store = function(){
-            var deferred = $q.defer();
+            
             if(service.current === null){
-                deferred.reject('There\'s no object to store.');
-                return deferred.promise;
+                throw 'There\'s no object to store.';
             }
-            var service;
+            var deferred = $q.defer();
+            var storeService;
             switch(service.current.store_location){
                 case 'local': 
-                case 'history': service = Filesystem; break;
-                case 'drive': service = DriveService; break;
+                case 'history': storeService = Filesystem; break;
+                case 'drive': storeService = DriveService; break;
                 default:
                     deferred.reject('Unknown store location :(');
                     return deferred.promise;
             }
             
             var onResult = function(result){
-                service.current = result;
+                service.current.file = result;
                 deferred.resolve(result);
             };
             
-            service.store(service.current)
-            .then(DBService.store)
+            storeService.store(service.current)
             .then(onResult)
             .catch(function(reason){
                 deferred.reject(reason);
             });
             return deferred.promise;
         };
-        /**
-         * It is similar to {service.store} but it will update data in indexedDB and create history object if none exists for current request.
-         * It will not force store for drive or local type items. They must be distinctly seved by the user.
-         * However, currently restored request object will still be stored in local storage for restoring latest request state. But if the object
-         * will be saved by the user local storage will be cleared and will hold only a reference to IndexedDb key.
-         * @returns {undefined}
-         */
-        var storeHistory = function(){
-            
-        };
-        var service = {
+        
+        service = {
             /**
              * restored object currently loaded into app
              */
             'current': null,
             'create': create,
-            'store': store
+            'store': store,
+            'getOrCreate': getCurrent
         };
         return service;
 }]);
@@ -656,33 +652,98 @@ AppServices.factory('DBService', ['$q','$indexedDB',function($q,$indexedDB) {
     };
     return service;
 }]);
+/**
+ * Service responsible to manage local files.
+ */
+AppServices.factory('Filesystem', ['$q','fsHistory', 'UUID',function($q,fsHistory,UUID) {
+    /**
+     * A directory where all requests objects files are stored.
+     * Currently Chrome supports only storing files in root folder (syncFileSystem). Issue has been reported. 
+     * @type String
+     */
+    var directory = '/';
+    /**
+     * @ngdoc method
+     * @name Filesystem.store
+     * @function
+     * 
+     * @description Store data on chrome's syncFilesystem
+     * @param {LocalItem} localItem Data to save, as JSON String.
+     * 
+     * @example 
+     *  Filesystem.store(LocalItem);
+     * 
+     * @returns {$q@call;defer.promise} The promise with {LocalItem} object.
+     */
+    var store = function(localItem){
+        var deferred = $q.defer();
+        var fileName = UUID();
+        
+        fsHistory.set(fileName, localItem.har).then(function(fileEntry){
+            deferred.resolve(fileEntry);
+        }).catch(function(error){
+            console.error('Wrtie history error: ', error);
+            deferred.reject(error);
+        });
+        
+        return deferred.promise;
+    };
+    /**
+     * @ngdoc method
+     * @name Filesystem.restore
+     * @function
+     * 
+     * @description Restore data from syncFilesystem.
+     * @param {FileObject} fileObject - local file item info.
+     *
+     * @example 
+     *  Filesystem.restore(FileObject);
+     *
+     * @return {$q@call;defer.promise} The Promise object. Defered.then() function will return a LocalItem object.
+     */
+    var restore = function(fileObject){
+        var deferred = $q.defer();
+        throw "Not yet implemented";
+        return deferred.promise;
+    };
+    
+    var service = {
+        'store': store,
+        'restore': restore
+    };
+    return service;
+}]);
 
 
-
-AppServices.factory('HttpRequest', ['$q','ArcRequest', 'RequestValues','DBService', '$rootScope', 'APP_EVENTS','$http','ChromeTcp',
-    function($q, ArcRequest, RequestValues, DBService, $rootScope, APP_EVENTS,$http,ChromeTcp) {
+AppServices.factory('HttpRequest', ['$q','HistoryValue', 'RequestValues','DBService', '$rootScope', 'APP_EVENTS','$http','ChromeTcp', 'RestConventer',
+    function($q, HistoryValue, RequestValues, DBService, $rootScope, APP_EVENTS, $http, ChromeTcp, RestConventer) {
         $rootScope.$on(APP_EVENTS.START_REQUEST, function(e){
             runRequest()
             .then(function(e){
                 $rootScope.$broadcast(APP_EVENTS.END_REQUEST, e);
+                saveHistory(e);
             })
             .catch(function(e){
                 $rootScope.$broadcast(APP_EVENTS.REQUEST_ERROR, e);
+                saveHistory(e);
             });
         });
     
     
+    function saveHistory(response){
+        getHistoryObject()
+        .then(updateHistoryObject.bind(response))
+        .then(saveHistoryObject)
+        .then(function(){
+            console.log('History has been saved.', HistoryValue.current);
+        })
+        .catch(function(error){
+            console.error('Can\'t save history object.', error);
+        });
+    };
+    
     
     /**
-     * Order of events:
-     * 1) ensure that ArcRequest.current object exists. If not it should be created.
-     * 2) @TODO: Apply magic variables
-     * 3) Load HTTP Socket library, create request and set data
-     * 4) Mark current time and send the request
-     * 5) Wait for response
-     * 6) On response mark current time and calculate request time
-     * 7) Save request data into history
-     * 8) Display result.
      * 
      * @returns {$q@call;defer.promise}
      */
@@ -791,6 +852,41 @@ AppServices.factory('HttpRequest', ['$q','ArcRequest', 'RequestValues','DBServic
     
     
     
+    var getHistoryObject = function(){
+        var deferred = $q.defer();
+        HistoryValue.getOrCreate().then(function(obj){
+            if(!!!obj){
+                deferred.reject(obj);
+                return;
+            }
+            deferred.resolve(obj);
+        }).catch(deferred.reject);
+        return deferred.promise;
+    };
+    
+    var updateHistoryObject = function(historyValue){
+        var deferred = $q.defer();
+        if(!this.request){
+            throw "Request does not contain valid data.";
+        }
+        RestConventer.asHar(historyValue.har, this)
+        .then(function(har){
+            HistoryValue.current.har = har;
+            deferred.resolve(har);
+        })
+        .catch(function(error){
+            console.error('HAR builder error: ', error);
+            deferred.reject(error);
+        });
+        
+        return deferred.promise;
+    };
+    var saveHistoryObject = function(){
+        return HistoryValue.store();
+    };
+    
+    
+    
     function searchHistoryFormMatch(list){
         if(!list) return null;
         for(var i=0, len=list.length; i<len; i++){
@@ -811,17 +907,14 @@ AppServices.factory('HttpRequest', ['$q','ArcRequest', 'RequestValues','DBServic
     function ensureCurrent(){
         var deferred = $q.defer();
         
-        
-        
-        
         DBService.listHistoryCandidates(RequestValues.url,RequestValues.method)
         .then(searchHistoryFormMatch)
         .then(function(result){
             if(!result){
-                ArcRequest.create({store_location:'history'});
-                deferred.resolve(ArcRequest.current);
+                HistoryValue.create({store_location:'history'});
+                deferred.resolve(HistoryValue.current);
             } else {
-                ArcRequest.restore(result.key)
+                HistoryValue.restore(result.key)
                     .then(function(){
                         deferred.resolve();
                     })
@@ -1219,3 +1312,19 @@ AppServices.factory('Definitions', ['$q','$http', function($q, $http) {
     };
     return service;
 }]);
+/**
+ * http://stackoverflow.com/a/21963136/1127848
+ */
+AppServices.factory('UUID', function () {
+    var lut = []; for (var i=0; i<256; i++) { lut[i] = (i<16?'0':'')+(i).toString(16); }
+    return function () {
+      var d0 = Math.random()*0xffffffff|0;
+      var d1 = Math.random()*0xffffffff|0;
+      var d2 = Math.random()*0xffffffff|0;
+      var d3 = Math.random()*0xffffffff|0;
+      return lut[d0&0xff]+lut[d0>>8&0xff]+lut[d0>>16&0xff]+lut[d0>>24&0xff]+'-'+
+        lut[d1&0xff]+lut[d1>>8&0xff]+'-'+lut[d1>>16&0x0f|0x40]+lut[d1>>24&0xff]+'-'+
+        lut[d2&0x3f|0x80]+lut[d2>>8&0xff]+'-'+lut[d2>>16&0xff]+lut[d2>>24&0xff]+
+        lut[d3&0xff]+lut[d3>>8&0xff]+lut[d3>>16&0xff]+lut[d3>>24&0xff];
+    };
+});

@@ -23,11 +23,17 @@ var arc_conventer = function($q){
      * 
      * @description Get request and the response as a HAR object.
      * 
+     * @param {Object} currentHar Existing HAR object. If it is not null new one will be created.
      * @param {Object} httpData A request and response data object.
      * @returns {undefined}
      */
-    var convertToHAR = function(httpData){
-        
+    var convertToHAR = function(currentHar, httpData){
+        var workerData = {
+            'type': 'har',
+            'http': httpData,
+            'har': currentHar || {}
+        };
+        return _callWorker(workerData);
     };
     
     /**
@@ -44,6 +50,10 @@ var arc_conventer = function($q){
             'type': 'curl',
             'http': requestData
         };
+        return _callWorker(workerData);
+    };
+    
+    function _callWorker(params){
         var deferred = $q.defer();
         var worker = new Worker('js/workers/conventer-worker.js');
         worker.addEventListener('message', function(e) {
@@ -52,9 +62,9 @@ var arc_conventer = function($q){
         worker.addEventListener('error', function(e) {
             deferred.reject(e);
         }, false);
-        worker.postMessage(workerData);
+        worker.postMessage(params);
         return deferred.promise;
-    };
+    }
     
     var service = {
         'asHar': convertToHAR,

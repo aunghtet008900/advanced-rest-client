@@ -112,7 +112,7 @@ angular.module('arc.fsHistory', [])
             var defered = $q.defer();
             fileEntry.createWriter(function(fileWriter) {
                 fileWriter.onwriteend = function(e) {
-                    defered.resolve();
+                    defered.resolve(fileEntry);
                 };
                 fileWriter.onerror = function(e) {
                     defered.reject(e);
