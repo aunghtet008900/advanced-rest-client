@@ -18,6 +18,39 @@ html, body{
     margin:0;
     overflow: auto;
 }
+
+:host{
+  font-family: RobotoDraft;
+}
+
+[drawer] {
+  background-color: #fff;
+}
+
+[main] > div {
+  padding: 2em;
+}
+
+[drawer] > core-item{
+  padding: 1em;
+}
+[main] paper-checkbox {
+  margin-right: 1em;
+}
+[main] {
+  height: 100%;
+  background-color: #f1f1f3;
+}
+[drawer] core-toolbar{
+  background-color: #4f7dc9;
+  color: #fff;
+}
+[main] core-toolbar{
+  background-color: #526e9c;
+  color: #fff;
+}
+
+
 .select-text{
     -webkit-user-select: text;
     user-select: text;
