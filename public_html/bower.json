@@ -1,0 +1,19 @@
+{
+  "name": "Advanced Rest Client",
+  "description": "REST API tool for Google Chrome",
+  "homepage": "",
+  "keywords": [],
+  "author": { "name": "Paweł Psztyć", "email": "jarrodek@gmail.com" },
+  "private": true,
+  "dependencies": {
+    "polymer": "Polymer/polymer#master",
+    "core-elements": "Polymer/core-elements#master",
+    "paper-elements": "Polymer/paper-elements",
+    "angular": "angular/bower-angular",
+    "angular-sanitize": "angular/bower-angular-sanitize",
+    "angular-route": "angular/bower-angular-route",
+    "angular-animate": "angular/bower-angular-animate",
+    "angular-touch": "angular/bower-angular-touch",
+    "font-roboto": "Polymer/font-roboto"
+  }
+}
