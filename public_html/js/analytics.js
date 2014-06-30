@@ -14,116 +14,156 @@
  * limitations under the License.
  */
 
+/**
+ * @ngdoc module
+ * @name goog.analytics
+ * @description
+ *
+ * # goog.analytics
+ *
+ * The `goog.analytics` module provides access to Google Analytics for apps.
+ */
+/* global -googAnalyticsModule */
+var googAnalyticsModule = angular.module('goog.analytics', []).provider('analytics', $AnalyticsProvider);
 
-angular.module('goog.analytics', []).provider('analytics', function() {
-    var module = this;
+/**
+ * @ngdoc provider
+ * @name $AnalyticsProvider
+ * @function
+ *
+ * @description
+ *
+ * Used for configuring Google Analytics library.
+ *
+ * ## Example
+ * See {@link goog.analytics.setClientId#example analytics} for an example of configuring.
+ *
+ * ## Dependencies
+ * Requires the {@link $q `$q`} module to be installed.
+ */
+function $AnalyticsProvider() {
+    
     //goog.require('analytics.getService');
     var service = analytics.getService('rest_client');
     var clients = [];
     ///http://googlechrome.github.io/chrome-platform-analytics/interface_analytics_Tracker.html
     var trakers = [];
     /**
-     * Set Google Analytics client(s) ID(s).
-     * See https://support.google.com/analytics/answer/2614741? for more information.
+     * @ngdoc method
+     * @name $AnalyticsProvider#setClientId
+     * 
      * @param {String|Array} clientId One clientId property or an array of properties.
+     * 
+     * @deprecated Set Google Analytics client(s) ID(s).
+     * See https://support.google.com/analytics/answer/2614741? for more information.
+     * 
+     * ## Example
+     * 
+     * app.config(function(analyticsProvider){
+     *  analyticsProvider.setClientId('UA-12345678-9');
+     * });
+     * 
      * @returns {undefined}
      */
-    module.setClientId = function(clientId){
-        if(clients.indexOf(clientId) !== -1) return;
+    this.setClientId = function(clientId) {
+        if (clients.indexOf(clientId) !== -1)
+            return;
         clients.push(clientId);
         trakers.push(service.getTracker(clientId));
     };
-    
-    module.$get = ['$q',function($q) {
-        
-        var trackPageview = function(view){
-            for(var i=0,len=trakers.length; i<len; i++){
-                trakers[i].sendAppView(view);
-            }
-        };
 
-        var trackEvent = function(category, action, label, value){
-            for(var i=0,len=trakers.length; i<len; i++){
-                trakers[i].sendEvent(category, action, label, value||undefined);
-            }
-        };
 
-        var setEnabled = function(enabled){
-            var defered = $q.defer();
-            ///http://googlechrome.github.io/chrome-platform-analytics/interface_analytics_Config.html
-            service.getConfig().addCallback(function(config) {
-                config.setTrackingPermitted(enabled);
-                // If "enabled" is false the library will automatically stop
-                // sending information to Google Analytics and will persist this
-                // behavior automatically.
-                defered.resolve();
-            });
-            return defered.promise;
-        };
 
-        var isEnabled = function(){
-            var defered = $q.defer();
-            service.getConfig().addCallback(function(config) {
-                defered.resolve(config.isTrackingPermitted());
-            });
-            return defered.promise;
-        };
+    this.$get = ['$q', function($q) {
 
-        /**
-         * @ngdoc angular.$provider
-         * @name analytics
-         * @function
-         *
-         * @description analytics provider object
-         */
-        return {
+            var trackPageview = function(view) {
+                for (var i = 0, len = trakers.length; i < len; i++) {
+                    trakers[i].sendAppView(view);
+                }
+            };
+
+            var trackEvent = function(category, action, label, value) {
+                for (var i = 0, len = trakers.length; i < len; i++) {
+                    trakers[i].sendEvent(category, action, label, value || undefined);
+                }
+            };
+
+            var setEnabled = function(enabled) {
+                var defered = $q.defer();
+                ///http://googlechrome.github.io/chrome-platform-analytics/interface_analytics_Config.html
+                service.getConfig().addCallback(function(config) {
+                    config.setTrackingPermitted(enabled);
+                    // If "enabled" is false the library will automatically stop
+                    // sending information to Google Analytics and will persist this
+                    // behavior automatically.
+                    defered.resolve();
+                });
+                return defered.promise;
+            };
+
+            var isEnabled = function() {
+                var defered = $q.defer();
+                service.getConfig().addCallback(function(config) {
+                    defered.resolve(config.isTrackingPermitted());
+                });
+                return defered.promise;
+            };
+
             /**
-             * @ngdoc method
-             * @name analytics.view
+             * @ngdoc angular.$provider
+             * @name analytics
              * @function
              *
-             * @description Track pageview
-             *
-             * @params {string} view the name of the view to track
-             * @returns {undefined}
+             * @description analytics provider object
              */
-            'view': trackPageview,
-            /**
-             * @ngdoc method
-             * @name analytics.event
-             * @function
-             *
-             * @description Track event
-             *
-             * @params {string} category Event's category
-             * @params {string} action Event's action
-             * @params {string} label Event's label
-             * @params {integer} value (optional) numeric value for event.
-             * 
-             * @returns {undefined}
-             */
-            'event': trackEvent,
-            /**
-             * @ngdoc method
-             * @name analytics.setEnabled
-             * @function
-             *
-             * @description Enable or disable analytics in this app.
-             *
-             * @params {boolean} false means analytics will stop reporting.
-             * @returns {undefined}
-             */
-            'setEnabled': setEnabled,
-            /**
-             * @ngdoc method
-             * @name analytics.isEnabled
-             * @function
-             *
-             * @description Check if analytics is enabled for the app.
-             *
-             * @returns {boolean}
-             */
-            'isEnabled': isEnabled
-        };
-    }];
-});
+            return {
+                /**
+                 * @ngdoc method
+                 * @name analytics.view
+                 * @function
+                 *
+                 * @description Track pageview
+                 *
+                 * @params {string} view the name of the view to track
+                 * @returns {undefined}
+                 */
+                'view': trackPageview,
+                /**
+                 * @ngdoc method
+                 * @name analytics.event
+                 * @function
+                 *
+                 * @description Track event
+                 *
+                 * @params {string} category Event's category
+                 * @params {string} action Event's action
+                 * @params {string} label Event's label
+                 * @params {integer} value (optional) numeric value for event.
+                 * 
+                 * @returns {undefined}
+                 */
+                'event': trackEvent,
+                /**
+                 * @ngdoc method
+                 * @name analytics.setEnabled
+                 * @function
+                 *
+                 * @description Enable or disable analytics in this app.
+                 *
+                 * @params {boolean} false means analytics will stop reporting.
+                 * @returns {undefined}
+                 */
+                'setEnabled': setEnabled,
+                /**
+                 * @ngdoc method
+                 * @name analytics.isEnabled
+                 * @function
+                 *
+                 * @description Check if analytics is enabled for the app.
+                 *
+                 * @returns {boolean}
+                 */
+                'isEnabled': isEnabled
+            };
+        }];
+}
