@@ -22,7 +22,7 @@ angular.module('arc.valuesService', [])
  * JSON String (toArray) or for restore form values from JSON string and passing
  * them to service values (fromString).
  */
-.factory('RequestValues', ['RequestParser', 'fsHistory', function(parser, fsHistory) {
+.factory('RequestValues', ['RequestParser', 'fsHistory', 'HistoryValue', function(parser, fsHistory, HistoryValue) {
     var service = {
         //current URL value
         'url': null, //'http://blog.gdgpoland.org/feeds/posts/default?alt=json', //'http://beerlovers.kalicinscy.com/pubs/getCities.json',//'http://www.googleapis.com/youtube/v3/videos?id=7lCDEYXw3mM&key=AIzaSyD2OjJy2eMbxA1PVpW2AWstcQ2mAZkxpLQ&part=snippet,contentDetails,statistics,status',//'http://gdata.youtube.com/feeds/api/playlists/OU2XLYxmsIKNXidK5HZsHu9T7zs6nxwK/?v=2&alt=json&feature=plcp', //https://www.google.com
@@ -37,7 +37,9 @@ angular.module('arc.valuesService', [])
             'value': null
         },
         //array of FileObjects
-        'files': []
+        'files': [],
+        //indexedDb ID. If it is available the file for current request exists
+        'dbid': null
     };
     
     /**
@@ -65,7 +67,7 @@ angular.module('arc.valuesService', [])
      * @return {Array} Array of objects with "name" and "value" keys.
      */
     service.headers.toArray = function(headersString){
-        if(this.value.length === 0) return [];
+        if(this.value.length === 0) return []; //TODO: to be removed?
         return parser.headersToArray(headersString);
     };
     /**
@@ -133,7 +135,8 @@ angular.module('arc.valuesService', [])
             'url': service.url,
             'method': service.method,
             'headers': service.headers.value,
-            'payload': service.payload.value
+            'payload': service.payload.value,
+            'id': service.dbid
         };
         return result;
     };
@@ -179,6 +182,7 @@ angular.module('arc.valuesService', [])
                 console.error(error.stack);
                 return;
             }
+            console.log(data);
             if(!!!data){
                 console.info('No restored data available.');
                 return;
@@ -194,6 +198,10 @@ angular.module('arc.valuesService', [])
             }
             if(!!data.payload){
                 service.payload.value = data.payload;
+            }
+            if(!!data.id){
+                service.dbid = data.id;
+                HistoryValue.restoreCurrent(data.id);
             }
         })
         .catch(function(error){
@@ -226,8 +234,8 @@ angular.module('arc.valuesService', [])
  * (if user requested). It means that user want to save historical data as saved 
  * (named) request. It will use different interface to view or search for requests.
  */
-.factory('HistoryValue', ['$q','RequestValues','DriveService','DBService', '$rootScope', 'APP_EVENTS', 'Filesystem', 
-    function($q,RequestValues,DriveService,DBService,$rootScope, APP_EVENTS, Filesystem) {
+.factory('HistoryValue', ['$q','DriveService', '$rootScope', 'APP_EVENTS', 'Filesystem', 'DBService', 
+    function($q,DriveService,$rootScope, APP_EVENTS, Filesystem, DBService) {
         $rootScope.$on(APP_EVENTS.errorOccured, function(e, msg, reason){});
         
         var service = {};
@@ -273,6 +281,7 @@ angular.module('arc.valuesService', [])
             service.current = {};
             service.current.store_location = params.store_location;
             service.current.har = null;
+            service.current.db = null;
             if(params.name){
                 service.current.name = params.name;
             }
@@ -295,10 +304,10 @@ angular.module('arc.valuesService', [])
          * 
          * @returns {$q@call;defer.promise} The promise with stored object.
          */
-        var store = function(){
+        var store = function(response){
             
             if(service.current === null){
-                throw "There's no object to store.";
+                throw 'There\'s no object to store.';
             }
             var deferred = $q.defer();
             var storeService;
@@ -313,7 +322,27 @@ angular.module('arc.valuesService', [])
             
             var onResult = function(result){
                 service.current.file = result;
-                deferred.resolve(result);
+                
+                ///updateDat
+                var storeData;
+                if(service.current.db === null){
+                    storeData = {
+                        'url': response.request.url,
+                        'method': response.request.method,
+                        'type': service.current.store_location,
+                        'project_name': null,
+                        'name': null,
+                        'file': null,
+                        'drive': null
+                    };
+                } else {
+                    storeData = service.current.db;
+                }
+                
+                DBService.store(storeData).then(function(e){
+                    deferred.resolve(result);
+                });
+                
             };
             
             storeService.store(service.current)
@@ -324,6 +353,13 @@ angular.module('arc.valuesService', [])
             return deferred.promise;
         };
         
+        var restoreCurrent = function(dbKey){
+            DBService.restore(dbKey).then(function(result){
+                console.log(dbKey, result);
+            });
+            //service.current.db
+        };
+        
         service = {
             /**
              * restored object currently loaded into app
@@ -331,7 +367,8 @@ angular.module('arc.valuesService', [])
             'current': null,
             'create': create,
             'store': store,
-            'getOrCreate': getCurrent
+            'getOrCreate': getCurrent,
+            'restoreCurrent': restoreCurrent
         };
         return service;
 }]);

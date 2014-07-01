@@ -1,0 +1,22 @@
+Saving HTTP history object algorithm.
+
+All requests are stored in syncable / local storage as files. Chrome has implemented
+syncable filesystem which will sync files between app's instances.
+After a new file is created on one instance it will appear in another. Then sync
+adapter will create an entry in database.
+
+All steps are executed after user action (send or save).
+
+After send action:
+
+
+-- When response ready
+
+- if no current history object exists
+    -- create HAR object
+    -- create UUID for file name
+    -- extract metadata for indexedDB
+    -- create indexeddb object
+    -- insert into indexeddb
+    -- insert into local / sync storage
+- if current object exists

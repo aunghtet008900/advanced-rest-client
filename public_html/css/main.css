@@ -68,36 +68,34 @@ html, body {
   height: 100%;
   margin: 0;
   overflow: auto; }
-:host{
-  font-family: RobotoDraft;
-}
+
+:host {
+  font-family: RobotoDraft; }
 
 [drawer] {
-  background-color: #fff;
-}
+  background-color: #fff; }
 
 [main] > div {
-  padding: 2em;
-}
+  padding: 2em; }
 
-[drawer] > core-item{
-  padding: 1em;
-}
+[drawer] > core-item {
+  padding: 1em; }
+
 [main] paper-checkbox {
-  margin-right: 1em;
-}
+  margin-right: 1em; }
+
 [main] {
   height: 100%;
-  background-color: #f1f1f3;
-}
-[drawer] core-toolbar{
+  background-color: #f1f1f3; }
+
+[drawer] core-toolbar {
   background-color: #4f7dc9;
-  color: #fff;
-}
-[main] core-toolbar{
+  color: #fff; }
+
+[main] core-toolbar {
   background-color: #526e9c;
-  color: #fff;
-}
+  color: #fff; }
+
 .select-text {
   -webkit-user-select: text;
   user-select: text;

@@ -1,0 +1,7 @@
+<project name="Advanced Rest Client" default="index" basedir=".">
+    <target name="index">
+        <exec executable="vulcanize">
+            <arg line="-o build.html index.html --csp"/>
+        </exec>
+    </target>
+</project>

@@ -13,6 +13,10 @@ angular.module('arc.persistantService', [])
  * 
  * @description Access to Chrome's storage area (either sync or local).
  * It require "storage" permission in the manifest file.
+ * 
+ * @todo: this service is not used. To be removed?
+ * 
+ * @param {Object} $q Future object
  */
 .factory('$ChromeStorage', ['$q', function($q) {
   
@@ -98,6 +102,8 @@ angular.module('arc.persistantService', [])
 }])
 /**
  * Service responsible to manage Drive files.
+ * 
+ * @param {Object} $q Future object
  */
 .factory('DriveService', ['$q',function($q) {
     /**
@@ -152,62 +158,72 @@ angular.module('arc.persistantService', [])
 
 /**
  * Service responsible to manage local files.
+ * 
+ * @param {Object} $q Future object
+ * @param {Object} $indexedDB Database Service
  */
 .factory('DBService', ['$q','$indexedDB',function($q,$indexedDB) {
-        
+    /**
+     * @ngdoc service
+     * @name DBService.store
+     * @param {Object} item Item to store.
+     * 
+     * @description This method is used to add or update existing item to request_store store.
+     * If no key provided new will be generated. To do so "url" and "method" keys myst be provided.
+     * 
+     * @returns {$q@call;defer.promise}
+     */
     var store = function(item){
         var deferred = $q.defer();
         if(!item){
             deferred.reject('Can\'t store object in database because object is undefined.');
             return deferred.promise;
         }
-        if(['local','history'].indexOf(item.store_location) === -1){
-            deferred.resolve(item);
-            return deferred.promise;
+        
+        var requestStore = $indexedDB.objectStore('request_store');
+        if(!!!item.key){
+            item.key = createKey(item.url, item.method);
+            requestStore.insert(item).then(deferred.result);
+        } else {
+            requestStore.upsert(item).then(deferred.result);
         }
         
-        throw "Not yet implemented";
+        
         return deferred.promise;
     };
-    var restore = function(object){
+    var restore = function(key){
         var deferred = $q.defer();
-        throw "Not yet implemented";
-        return deferred.promise;
-    };
-    
-    
-    var createKey = function(url,method,created){
-        var delim = ':';
-        var key = method + delim + url;
-        if(created){
-            key += delim + created;
-        }
-        return key;
-    };
-    
-    var listHistoryCandidates = function(url,method){
-        var deferred = $q.defer();
-        var store = $indexedDB.objectStore('request_store');
-        var query = $indexedDB.queryBuilder().$index('key').$lt(createKey(url,method)).$asc().compile();
-        store.each(query).then(function(cursor){
-            deferred.resolve(null);
-        }, function(reason){
-            
-        }, function(cursor){
-            
+        
+        var requestStore = $indexedDB.objectStore('request_store');
+        var query = $indexedDB.queryBuilder().$index('key').$eq(key).compile();
+        requestStore.each(query).then(function(cursor){
+            deferred.result(cursor.value);
         });
         return deferred.promise;
+    };
+    
+    
+    var createKey = function(url,method){
+        if(!url || !method){
+            throw "The URL and Method parameter is required to create a key.";
+        }
+        var delim = ':';
+        var key = method + delim + url;
+        return key;
     };
     
     var service = {
         'store': store,
         'restore': restore,
-        'listHistoryCandidates': listHistoryCandidates
+        'createKey': createKey
     };
     return service;
 }])
 /**
  * Service responsible to manage local files.
+ * @param {Object} $q Future object
+ * @param {Object} fsHistory History Service
+ * @param {Object} UUID uuid generator
  */
 .factory('Filesystem', ['$q','fsHistory', 'UUID',function($q,fsHistory,UUID) {
     /**
@@ -266,4 +282,249 @@ angular.module('arc.persistantService', [])
         'restore': restore
     };
     return service;
+}])
+.factory('LocalFs',['$q', function($q){
+    window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
+    var storageQuota = 512 * 1024 * 1024;
+    /**
+     * @ngdoc overvew
+     * @name LocalFs.requestFilesystem
+     * 
+     * @description Request a local filesystem.
+     * 
+     * @returns {$q@call;defer.promise} Promise will result with
+     * DOMFileSystem object.
+     */
+    var requestFilesystem = function() {
+        var defered = $q.defer();
+        
+        var onInit = function(fs){
+            defered.resolve(fs);
+        };
+        var onError = function(e){
+            defered.reject(e);
+        };
+        
+        navigator.webkitPersistentStorage.requestQuota(PERSISTENT, storageQuota, function(grantedBytes) {
+            window.requestFileSystem(window.PERSISTENT, grantedBytes, onInit, onError);
+        }, onError);
+        return defered.promise;
+    };
+    /**
+     * @ngdoc overvew
+     * @name LocalFs.getUsageAndQuota
+     * 
+     * @description Returns the current usage and quota in bytes for the 
+     * local file storage for the app.
+     * 
+     * 
+     * @returns {$q@call;defer.promise} Promise will result with local
+     * filesystem usage and quota status. Object will have folowing keys: 
+     * - usageBytes (integer) 
+     * - quotaBytes (integer) 
+     */
+    var getUsageAndQuota = function(){
+        var defered = $q.defer();
+
+        navigator.webkitPersistentStorage.queryUsageAndQuota(
+            function(currentUsageInBytes, currentQuotaInBytes){
+                defered.resolve({
+                    'usageBytes': currentUsageInBytes,
+                    'quotaBytes': currentQuotaInBytes
+                });
+            }, function(e){
+                defered.reject(e);
+            });
+
+        return defered.promise;
+    };
+    /**
+     * @ngdoc overvew
+     * @name LocalFs.getFileStatus
+     * 
+     * @description Since local FS doesn't have sync status this function
+     * will always return 'synced' (as a fallback to OK result for synced FS)
+     * 
+     * @param {Object} fileEntry The fileEntry
+     * 
+     * @returns {$q@call;defer.promise} Promise will result with 'synced'
+     * status to be aligned with 'synced' FS as a OK response.
+     */
+    var getFileStatus = function(fileEntry){
+        var defered = $q.defer();
+        defered.resolve('synced');
+        return defered.promise;
+    };
+   /**
+    * @ngdoc overvew
+    * @name LocalFs.getFileStatuses
+    * 
+    * @description Since local FS doesn't have sync status this function
+     * will always return 'synced' for all files in the array (as a fallback 
+     * to OK result for synced FS)
+    * 
+    * @param {Array} fileEntriesArray array of object fileEntries
+    * 
+    * @returns {$q@call;defer.promise} Promise will result with an array 
+    * of objects, where keys are: 
+    *  - fileEntry - One of the Entry's originally given to getFileStatuses.
+    *  - status - Always 'synced'
+    */
+   var getFileStatuses = function(fileEntriesArray){
+       var defered = $q.defer();
+       var result = [];
+       for(var i=0, len=fileEntriesArray.length; i<len; i++){
+           result[result.length] = {
+               'fileEntry': fileEntriesArray[i],
+               'status': 'synced'
+           };
+       }
+       return defered.promise;
+    };
+    /**
+     * @ngdoc overvew
+     * @name LocalFs.getServiceStatus
+     * 
+     * @description For local FS this function can only result with 'running' status.
+     * 
+     * @returns {$q@call;defer.promise} Promise will result with "running" status
+     */
+    var getServiceStatus = function(){
+        var defered = $q.defer();
+        defered.resolve('running');
+        return defered.promise;
+    };
+    
+    var service = {
+        'requestFilesystem': requestFilesystem,
+        'getUsageAndQuota': getUsageAndQuota,
+        'getFileStatus': getFileStatus,
+        'getFileStatuses': getFileStatuses,
+        'getServiceStatus': getServiceStatus
+    };
+
+    return service;
+}])
+.factory('SyncableFs',['$q', function($q){
+        /**
+         * @ngdoc overvew
+         * @name SyncableFs.requestFilesystem
+         * 
+         * @description Returns a syncable filesystem backed by Google Drive. 
+         * The returned DOMFileSystem instance can be operated on in the same 
+         * way as the Temporary and Persistant file systems 
+         * (see http://www.w3.org/TR/file-system-api/), except that 
+         * the filesystem object returned for Sync FileSystem does NOT support 
+         * directory operations (yet). You can get a list of file entries 
+         * by reading the root directory (by creating a new DirectoryReader), 
+         * but cannot create a new directory in it.
+         * 
+         * Calling this multiple times from the same app will return the same 
+         * handle to the same file system.
+         * 
+         * @returns {$q@call;defer.promise} Promise will result with
+         * DOMFileSystem object.
+         */
+        var requestFilesystem = function(){
+            var defered = $q.defer();
+            chrome.syncFileSystem.requestFileSystem(function(fileSystem){
+                defered.resolve(fileSystem);
+            });
+            return defered.promise;
+        };
+        /**
+         * @ngdoc overvew
+         * @name SyncableFs.getUsageAndQuota
+         * 
+         * @description Returns the current usage and quota in bytes for the 
+         * 'syncable' file storage for the app.
+         * 
+         * 
+         * @returns {$q@call;defer.promise} Promise will result with 'syncable'
+         * filesystem status. Object will have folowwing keys: 
+         * - usageBytes (integer) 
+         * - quotaBytes (integer) 
+         */
+        var getUsageAndQuota = function(){
+            var defered = $q.defer();
+            
+            requestFilesystem()
+            .then(function(fs){
+                chrome.syncFileSystem.getUsageAndQuota(fs, function(info){
+                    defered.resolve(info);
+                });
+            });
+            
+            return defered.promise;
+        };
+        /**
+         * @ngdoc overvew
+         * @name SyncableFs.getFileStatus
+         * 
+         * @description Returns the FileStatus for the given fileEntry. 
+         * 
+         * @param {Object} fileEntry The fileEntry
+         * 
+         * @returns {$q@call;defer.promise} Promise will result with FileStatus: 
+         * The status value can be 'synced', 'pending' or 'conflicting'. 
+         * Note that 'conflicting' state only happens when the service's 
+         * conflict resolution policy is set to 'manual'
+         */
+        var getFileStatus = function(fileEntry){
+            var defered = $q.defer();
+            chrome.syncFileSystem.getFileStatus(fileEntry, function(status){
+                defered.resolve(status);
+            });
+            return defered.promise;
+        };
+        /**
+         * @ngdoc overvew
+         * @name SyncableFs.getFileStatuses
+         * 
+         * @description Returns each FileStatus for the given fileEntry array. 
+         * Typically called with the result from dirReader.readEntries().
+         * 
+         * @param {Array} fileEntriesArray array of object fileEntries
+         * 
+         * @returns {$q@call;defer.promise} Promise will result with an array 
+         * of objects, where keys are: 
+         *  - fileEntry - One of the Entry's originally given to getFileStatuses.
+         *  - status - The status value can be 'synced', 'pending' or 'conflicting'.
+         *  - error (optional) - Optional error that is only returned if there 
+         *      was a problem retrieving the FileStatus for the given file.
+         */
+        var getFileStatuses = function(fileEntriesArray){
+            var defered = $q.defer();
+            chrome.syncFileSystem.getFileStatuses(fileEntriesArray, function(statusesArray){
+                defered.resolve(statusesArray);
+            });
+            return defered.promise;
+        };
+        /**
+         * @ngdoc overvew
+         * @name SyncableFs.getServiceStatus
+         * 
+         * @description Returns the current sync backend status.
+         * 
+         * @returns {$q@call;defer.promise} Promise will result with one of 
+         * states: "initializing", "running", "authentication_required", 
+         * "temporary_unavailable", or "disabled"
+         */
+        var getServiceStatus = function(){
+            var defered = $q.defer();
+            chrome.syncFileSystem.getServiceStatus(function(status){
+                defered.resolve(status);
+            });
+            return defered.promise;
+        };
+        
+        var service = {
+            'requestFilesystem': requestFilesystem,
+            'getUsageAndQuota': getUsageAndQuota,
+            'getFileStatus': getFileStatus,
+            'getFileStatuses': getFileStatuses,
+            'getServiceStatus': getServiceStatus
+        };
+        
+        return service;
 }]);

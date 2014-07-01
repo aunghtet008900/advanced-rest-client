@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<!--
+
+!!!!!!!!!!!!!!!!
+AFTER ANY CHANGE TO index.html RUN build.xml FOR TARGET "index".
+It's for Polymer support.
+!!!!!!!!!!!!!!!!
+
+-->
 <html data-ng-app="RestClient" lang="en" data-ng-csp="">
     <head>
         <title>Rest Client App for Google Chrome</title>
@@ -10,6 +18,9 @@
         <link rel="stylesheet" href="libs/codemirror-3.19/addon/hint/arc-show-hint.css" media="screen">
         <link rel="stylesheet" href="libs/codemirror-3.19/addon/dialog/dialog.css" media="screen">
         <link rel="stylesheet" href="libs/angular.js/angular-csp.css" media="screen">
+        <script src="bower_components/platform/platform.js"></script>
+        <link rel="import" href="bower_components/paper-button/paper-button.html">
+        <link rel="import" href="bower_components/paper-ripple/paper-ripple.html">
     </head>
     <body ng-controller="AppController">
         <div id="appContainer">
@@ -35,6 +46,7 @@
                 </menu>
             </nav>
             <div class="container">
+                
                 <div ng-view></div>
                 <div class="row">
                     {{values||json}}

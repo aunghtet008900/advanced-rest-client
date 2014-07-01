@@ -9,7 +9,6 @@ angular.module('arc.httpService', [])
   .factory('HttpRequest', 
   ['$q','HistoryValue', 'RequestValues','DBService', '$rootScope', 'APP_EVENTS','$http','ChromeTcp', 'RestConventer',
     function($q, HistoryValue, RequestValues, DBService, $rootScope, APP_EVENTS, $http, ChromeTcp, RestConventer) {
-        
         $rootScope.$on(APP_EVENTS.START_REQUEST, function(e){
             runRequest()
             .then(function(e){
@@ -22,11 +21,10 @@ angular.module('arc.httpService', [])
             });
         });
     
-    
     function saveHistory(response){
         getHistoryObject()
         .then(updateHistoryObject.bind(response))
-        .then(saveHistoryObject)
+        .then(saveHistoryObject.bind(response))
         .then(function(){
             console.log('History has been saved.', HistoryValue.current);
         })
@@ -140,7 +138,6 @@ angular.module('arc.httpService', [])
         
         deferred.resolve(req);
         return deferred.promise;
-        
     }
     
     
@@ -177,7 +174,9 @@ angular.module('arc.httpService', [])
     var saveHistoryObject = function(){
         return HistoryValue.store();
     };
-    
+    var saveHistoryObject = function(){
+        return HistoryValue.store(this);
+    };
     
     
     function searchHistoryFormMatch(list){
@@ -195,29 +194,6 @@ angular.module('arc.httpService', [])
             return item;
         }
         return null;
-    }
-    
-    function ensureCurrent(){
-        var deferred = $q.defer();
-        
-        DBService.listHistoryCandidates(RequestValues.url,RequestValues.method)
-        .then(searchHistoryFormMatch)
-        .then(function(result){
-            if(!result){
-                HistoryValue.create({store_location:'history'});
-                deferred.resolve(HistoryValue.current);
-            } else {
-                HistoryValue.restore(result.key)
-                    .then(function(){
-                        deferred.resolve();
-                    })
-                    .catch(function(reason){
-                        deferred.reject(reason);
-                    });
-            }
-        });
-        
-        return deferred.promise;
     }
     
     var service = {
