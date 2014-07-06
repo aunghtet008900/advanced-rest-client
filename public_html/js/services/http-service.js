@@ -7,8 +7,8 @@
  */
 angular.module('arc.httpService', [])
   .factory('HttpRequest', 
-  ['$q','HistoryValue', 'RequestValues','DBService', '$rootScope', 'APP_EVENTS','$http','ChromeTcp', 'RestConventer',
-    function($q, HistoryValue, RequestValues, DBService, $rootScope, APP_EVENTS, $http, ChromeTcp, RestConventer) {
+  ['$q', 'RequestValues', '$rootScope', 'APP_EVENTS','$http','ChromeTcp', 'history',
+    function($q, RequestValues, $rootScope, APP_EVENTS, $http, ChromeTcp, history) {
         $rootScope.$on(APP_EVENTS.START_REQUEST, function(e){
             runRequest()
             .then(function(e){
@@ -22,15 +22,7 @@ angular.module('arc.httpService', [])
         });
     
     function saveHistory(response){
-        getHistoryObject()
-        .then(updateHistoryObject.bind(response))
-        .then(saveHistoryObject.bind(response))
-        .then(function(){
-            console.log('History has been saved.', HistoryValue.current);
-        })
-        .catch(function(error){
-            console.error('Can\'t save history object.', error);
-        });
+        history.save(response);
     };
     
     
@@ -120,7 +112,7 @@ angular.module('arc.httpService', [])
             'url': requestObject.url,
             'method': requestObject.method,
             'timeout': 30000,
-            'debug': false
+            'debug': true
         };
         
         if(RequestValues.hasPayload() && requestObject.payload){
@@ -140,61 +132,6 @@ angular.module('arc.httpService', [])
         return deferred.promise;
     }
     
-    
-    
-    var getHistoryObject = function(){
-        var deferred = $q.defer();
-        HistoryValue.getOrCreate().then(function(obj){
-            if(!!!obj){
-                deferred.reject(obj);
-                return;
-            }
-            deferred.resolve(obj);
-        }).catch(deferred.reject);
-        return deferred.promise;
-    };
-    
-    var updateHistoryObject = function(historyValue){
-        var deferred = $q.defer();
-        if(!this.request){
-            throw "Request does not contain valid data.";
-        }
-        RestConventer.asHar(historyValue.har, this)
-        .then(function(har){
-            HistoryValue.current.har = har;
-            deferred.resolve(har);
-        })
-        .catch(function(error){
-            console.error('HAR builder error: ', error);
-            deferred.reject(error);
-        });
-        
-        return deferred.promise;
-    };
-    var saveHistoryObject = function(){
-        return HistoryValue.store();
-    };
-    var saveHistoryObject = function(){
-        return HistoryValue.store(this);
-    };
-    
-    
-    function searchHistoryFormMatch(list){
-        if(!list) return null;
-        for(var i=0, len=list.length; i<len; i++){
-            var item = list[i].value;
-            
-            if(RequestValues.headers.value != item.headers.value){
-                continue;
-            }
-            if(RequestValues.payload.value != item.payload.value){
-                continue;
-            }
-            
-            return item;
-        }
-        return null;
-    }
     
     var service = {
        'run': runRequest 

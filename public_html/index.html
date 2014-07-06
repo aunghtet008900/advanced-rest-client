@@ -1,12 +1,4 @@
 <!DOCTYPE html>
-<!--
-
-!!!!!!!!!!!!!!!!
-AFTER ANY CHANGE TO index.html RUN build.xml FOR TARGET "index".
-It's for Polymer support.
-!!!!!!!!!!!!!!!!
-
--->
 <html data-ng-app="RestClient" lang="en" data-ng-csp="">
     <head>
         <title>Rest Client App for Google Chrome</title>
@@ -18,9 +10,6 @@ It's for Polymer support.
         <link rel="stylesheet" href="libs/codemirror-3.19/addon/hint/arc-show-hint.css" media="screen">
         <link rel="stylesheet" href="libs/codemirror-3.19/addon/dialog/dialog.css" media="screen">
         <link rel="stylesheet" href="libs/angular.js/angular-csp.css" media="screen">
-        <script src="bower_components/platform/platform.js"></script>
-        <link rel="import" href="bower_components/paper-button/paper-button.html">
-        <link rel="import" href="bower_components/paper-ripple/paper-ripple.html">
     </head>
     <body ng-controller="AppController">
         <div id="appContainer">
@@ -46,7 +35,6 @@ It's for Polymer support.
                 </menu>
             </nav>
             <div class="container">
-                
                 <div ng-view></div>
                 <div class="row">
                     {{values||json}}
@@ -99,6 +87,7 @@ It's for Polymer support.
         <script src="js/services/persistant-service.js"></script>
         <script src="js/services/values-service.js"></script>
         <script src="js/services/fs-history.js"></script>
+        <script src="js/services/history-service.js"></script>
         <script src="js/modules.js"></script>
         <script src="js/controllers.js"></script>
         <script src="js/filters.js"></script>

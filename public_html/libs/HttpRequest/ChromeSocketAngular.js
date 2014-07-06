@@ -34,9 +34,12 @@ angular.module('chrome.http', [])
             i = end;
         }
         //var encodedString = String.fromCharCode.apply(null, uintArray);
-        
-        var decodedString = decodeURIComponent(escape(encodedString));
-        return decodedString;
+        var escaped = escape(encodedString);
+        try{
+            return decodeURIComponent(escaped);
+        } catch(e){
+            return encodedString;
+        }
     }
     /**
      * The response object.
@@ -1170,10 +1173,13 @@ angular.module('chrome.http', [])
         if(this.connection.socketId === info.socketId){
             this.connection.metrics.endTimestamp = Date.now();
             if(info.resultCode === -100){ //SSL connections are not supported yet.
+                console.log('SSL connections are not yet supported by chrome.sockets API.');
                 this.dispatchEvent('error', {
                     'code': -100,
                     'message': 'SSL connections are not yet supported by chrome.sockets API.'
                 });
+            } else {
+                console.log('Some other error.');
             }
         }
         

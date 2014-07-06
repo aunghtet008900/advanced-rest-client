@@ -25,6 +25,7 @@ var RestClient = angular.module('RestClient', [
     'arc.userService',
     'arc.persistantService',
     'arc.valuesService',
+    'arc.history',
     'ui.bootstrap',
     'ui.codemirror',
     'xc.indexedDB',
@@ -87,6 +88,6 @@ RestClient.constant('APP_EVENTS', {
 RestClient.config(function(analyticsProvider){
     analyticsProvider.setClientId('UA-18021184-9');
 });
-RestClient.config(function(fsHistoryProvider){
-    fsHistoryProvider.setSyncable(true);
+RestClient.config(function(historyProvider){
+    historyProvider.setSyncable(true);
 });

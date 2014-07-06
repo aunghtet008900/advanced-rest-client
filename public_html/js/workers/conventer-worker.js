@@ -152,13 +152,13 @@ function getHarPage(request, no) {
     return {
         'startedDateTime': new Date().toJSON(),
         'id': 'page_' + no,
-        'title': request.url,
+        'title': request.name || request.url,
         'pageTimings': {
             "onContentLoad": 0,
             "onLoad": 0,
             "comment": ""
         },
-        "comment": "history"
+        "comment": request.name ? "local":"history"
     };
 }
 

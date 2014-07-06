@@ -176,18 +176,20 @@ angular.module('arc.persistantService', [])
     var store = function(item){
         var deferred = $q.defer();
         if(!item){
-            deferred.reject('Can\'t store object in database because object is undefined.');
-            return deferred.promise;
+            throw 'Can\'t store object in database because object is undefined.';
         }
         
         var requestStore = $indexedDB.objectStore('request_store');
         if(!!!item.key){
             item.key = createKey(item.url, item.method);
-            requestStore.insert(item).then(deferred.result);
+            requestStore.insert(item).then(function(){
+                deferred.resolve(item.key);
+            });
         } else {
-            requestStore.upsert(item).then(deferred.result);
+            requestStore.upsert(item).then(function(){
+                deferred.resolve(item.key);
+            });
         }
-        
         
         return deferred.promise;
     };
@@ -195,9 +197,10 @@ angular.module('arc.persistantService', [])
         var deferred = $q.defer();
         
         var requestStore = $indexedDB.objectStore('request_store');
-        var query = $indexedDB.queryBuilder().$index('key').$eq(key).compile();
-        requestStore.each(query).then(function(cursor){
-            deferred.result(cursor.value);
+//        var query = $indexedDB.queryBuilder().$index('key').$eq(key).compile();
+        requestStore.find(key).then(function(result){
+            //deferred.resolve(cursor.value);
+            deferred.resolve(result);
         });
         return deferred.promise;
     };
@@ -247,9 +250,10 @@ angular.module('arc.persistantService', [])
      */
     var store = function(localItem){
         var deferred = $q.defer();
-        var fileName = UUID();
-        
-        fsHistory.set(fileName, localItem.har).then(function(fileEntry){
+        if(!localItem.file.name){
+            throw "Filename not set";
+        }
+        fsHistory.set(localItem.file.name, localItem.har).then(function(fileEntry){
             deferred.resolve(fileEntry);
         }).catch(function(error){
             console.error('Wrtie history error: ', error);
@@ -305,7 +309,7 @@ angular.module('arc.persistantService', [])
             defered.reject(e);
         };
         
-        navigator.webkitPersistentStorage.requestQuota(PERSISTENT, storageQuota, function(grantedBytes) {
+        navigator.webkitPersistentStorage.requestQuota(storageQuota, function(grantedBytes) {
             window.requestFileSystem(window.PERSISTENT, grantedBytes, onInit, onError);
         }, onError);
         return defered.promise;
@@ -428,6 +432,11 @@ angular.module('arc.persistantService', [])
         var requestFilesystem = function(){
             var defered = $q.defer();
             chrome.syncFileSystem.requestFileSystem(function(fileSystem){
+                if(fileSystem === null){
+                    //When user is not signed into chrome 
+                    defered.reject(chrome.runtime.lastError);
+                    return;
+                }
                 defered.resolve(fileSystem);
             });
             return defered.promise;

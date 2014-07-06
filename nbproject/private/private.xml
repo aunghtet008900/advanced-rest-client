@@ -5,11 +5,13 @@
         <group>
             <file>file:/home/jarrod/NetBeansProjects/RestClient/history-alg.txt</file>
             <file>file:/home/jarrod/NetBeansProjects/RestClient/public_html/js/services.js</file>
+            <file>file:/home/jarrod/NetBeansProjects/RestClient/public_html/js/services/history-service.js</file>
             <file>file:/home/jarrod/NetBeansProjects/RestClient/public_html/js/app.js</file>
             <file>file:/home/jarrod/NetBeansProjects/RestClient/public_html/js/services/http-service.js</file>
             <file>file:/home/jarrod/NetBeansProjects/RestClient/public_html/js/services/persistant-service.js</file>
             <file>file:/home/jarrod/NetBeansProjects/RestClient/public_html/js/services/values-service.js</file>
             <file>file:/home/jarrod/NetBeansProjects/RestClient/public_html/js/services/fs-history.js</file>
+            <file>file:/home/jarrod/NetBeansProjects/RestClient/public_html/libs/indexeddb.js</file>
         </group>
     </open-files>
 </project-private>

@@ -46,7 +46,14 @@ angular.module('arc.fsHistory', [])
                     defered.reject(error);
                 });
             })
-            .catch(defered.reject);
+            .catch(function(reason){
+                if(syncable && reason && reason.message 
+                    && reason.message.indexOf("error code: -107") > 0){
+                    syncable = false;
+                    return getFile(filename);
+                }
+                defered.reject(reason);
+            });
             return defered.promise;
         };
 

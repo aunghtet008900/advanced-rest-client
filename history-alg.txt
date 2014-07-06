@@ -16,7 +16,32 @@ After send action:
     -- create HAR object
     -- create UUID for file name
     -- extract metadata for indexedDB
-    -- create indexeddb object
-    -- insert into indexeddb
-    -- insert into local / sync storage
+    -- create indexedDb object (type: "history")
+    -- insert into indexedDb
+    -- insert into local / sync storage (log.page[page index].comment = "history")
 - if current object exists
+    -- check request data is equal to restored
+        -- if no, clear current and start over
+    -- update HAR (add entry)
+    -- update local / sync storage
+
+After save action:
+- if current exists
+    -- check request data is equal to restored
+        -- if no, ask to override. 
+            -- If no, clear current and start over
+            -- if yes, proceed
+        -- if yes, proceed
+    -- if item type is "history"
+        -- update object type to "local"
+        -- update indexedDb entry (type "local")
+    -- update HAR (add entry)
+    -- update local / sync storage
+- if current not exists
+    -- create HAR object
+    -- create UUID for file name
+    -- set request.name to user's input
+    -- extract metadata for indexedDB
+    -- create indexedDb object (type: "local")
+    -- insert into indexedDb
+    -- insert into local / sync storage (log.page[page index].comment = "local")

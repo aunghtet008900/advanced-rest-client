@@ -83,7 +83,7 @@ angular.module('arc.responsepService', [])
                 throw 'No file selected.';
             }
             entry.createWriter(function(fileWriter) {
-                fileWriter.onwriteend = deferred.result;
+                fileWriter.onwriteend = deferred.resolve;
                 fileWriter.onerror = deferred.reject;
                 var blob = new Blob([response.response], {type: mime});
                 fileWriter.write(blob);
