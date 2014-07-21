@@ -18,7 +18,6 @@ var RestClient = angular.module('RestClient', [
     'arc.modules',
     'arc.controllers',
     'arc.converter',
-    'arc.fsHistory',
     'arc.cmService',
     'arc.httpService',
     'arc.responsepService',

@@ -1,5 +1,6 @@
 @import 'reset';
 @import 'defs';
+@import 'polymer';
 
 html{
     overflow: auto;
@@ -20,34 +21,34 @@ html, body{
 }
 
 :host{
-  font-family: RobotoDraft;
+    font-family: RobotoDraft;
 }
 
 [drawer] {
-  background-color: #fff;
+    background-color: #fff;
 }
 
 [main] > div {
-  padding: 2em;
+    padding: 2em;
 }
 
 [drawer] > core-item{
-  padding: 1em;
+    padding: 1em;
 }
 [main] paper-checkbox {
-  margin-right: 1em;
+    margin-right: 1em;
 }
 [main] {
-  height: 100%;
-  background-color: #f1f1f3;
+    height: 100%;
+    background-color: #f1f1f3;
 }
 [drawer] core-toolbar{
-  background-color: #4f7dc9;
-  color: #fff;
+    background-color: #4f7dc9;
+    color: #fff;
 }
 [main] core-toolbar{
-  background-color: #526e9c;
-  color: #fff;
+    background-color: #526e9c;
+    color: #fff;
 }
 
 
@@ -168,11 +169,15 @@ label.collapse-form {
     display: block;
 }
 .card {
+
+
+    /*width: 100%;*/
     background-color: #fff;
-    padding: 15px;
-    border-radius: 5px;
-    border: 1px #d8d8d8 solid;
+    padding: 1em;
+    margin: 1em;
+    
     position: relative;
+    
     .cart-title{
         font-weight: bold;
         margin: 0px 0 7px 0;
@@ -426,11 +431,11 @@ div.file-drop {
     font-size: 10pt;
     color: black;
     cursor: text;
-    
+
     *{
         vertical-align: middle;
     }
-    
+
     .stringValue{
         white-space: normal;
     }
@@ -524,7 +529,7 @@ p.bg-warning{
         max-height: 250px;
         overflow-y: auto;
         .suggestion-item:hover,
-        .suggestion-item.selected{
+            .suggestion-item.selected{
             background-color: rgb(231, 236, 243);
         }
     }
@@ -532,7 +537,7 @@ p.bg-warning{
         border-top-right-radius: 0;
         border-bottom-right-radius: 0;
     }
-    
+
 }
 
 
@@ -544,7 +549,7 @@ p.bg-warning{
     flex-direction: column;
     .response-header {
         display: table;
-        
+
         .header-name {
             font-weight: 400;
             color: rgb(133, 133, 133);
@@ -554,4 +559,10 @@ p.bg-warning{
             margin-left: 10px;
         }
     }
+}
+
+.polymer-item{position:relative;}
+.item-method {
+    font-weight: bold;
+    margin-right: 1em;
 }

@@ -24,7 +24,7 @@ angular.module('arc.valuesService', [])
  * 
  * @todo: Remove fsHistory object from here.
  */
-.factory('RequestValues', ['RequestParser', 'fsHistory','history', function(parser, fsHistory,history) {
+.factory('RequestValues', ['RequestParser', 'history', function(parser, history) {
     var service = {
         //current URL value
         'url': null, //'http://blog.gdgpoland.org/feeds/posts/default?alt=json', //'http://beerlovers.kalicinscy.com/pubs/getCities.json',//'http://www.googleapis.com/youtube/v3/videos?id=7lCDEYXw3mM&key=AIzaSyD2OjJy2eMbxA1PVpW2AWstcQ2mAZkxpLQ&part=snippet,contentDetails,statistics,status',//'http://gdata.youtube.com/feeds/api/playlists/OU2XLYxmsIKNXidK5HZsHu9T7zs6nxwK/?v=2&alt=json&feature=plcp', //https://www.google.com
@@ -151,7 +151,7 @@ angular.module('arc.valuesService', [])
      */
     service.store = function(){
         var data = JSON.stringify(service.toJson());
-        fsHistory.set('latest', data)
+        history.set('latest', data)
         .then(function(){})
         .catch(function(error){
             console.error(error);
@@ -167,7 +167,7 @@ angular.module('arc.valuesService', [])
      * @return {undefined}
      */
     service.restore = function(){
-        return fsHistory.get('latest')
+        return history.get('latest')
         .then(function(dataStr){
             if(!!!dataStr || dataStr === "") {
                 console.info("No data in restored str.");
@@ -198,174 +198,13 @@ angular.module('arc.valuesService', [])
                 service.payload.value = data.payload;
             }
             history.restore(data.url, data.method).catch(function(e){
-                window.console.erro(e);
+                console.error('Error restoring history object from latest',e);
             });
         })
         .catch(function(error){
-            console.error(error);
+            console.error('Error restoring latest object', error);
         });
     };
     
     return service;
 }]);
-
-
-/**
- * @ngdoc Overview
- * @name HistoryValue
- * 
- * @description
- * Besides RequestValues which holds current form values the app is using second
- * service to hold historical data with reference to place where it is saved.
- * 
- * Historical data will keep the request values (method, url, headers, payload)
- * as well as responses history (if requested, then will be requested from 
- * storage).
- * 
- * History data can be kept in different places depending of user's choice. 
- * History is always saved in storage (IndexedDb or as file in syncStorage).
- * It can also be saved as a Drive file. Drive files are stored in Google Drive
- * using different store service.
- * 
- * History items stored locally in sync storage or IndexedDb can have name 
- * (if user requested). It means that user want to save historical data as saved 
- * (named) request. It will use different interface to view or search for requests.
- */
-//.factory('HistoryValue', ['$q','DriveService', '$rootScope', 'APP_EVENTS', 'Filesystem', 'DBService', 
-//    function($q,DriveService,$rootScope, APP_EVENTS, Filesystem, DBService) {
-//        $rootScope.$on(APP_EVENTS.errorOccured, function(e, msg, reason){});
-//        
-//        var service = {};
-//        
-//        var getCurrent = function(){
-//            var deferred = $q.defer();
-//            if(service.current !== null){
-//                deferred.resolve(service.current);
-//            } else {
-//                deferred.resolve(create({'store_location': 'history'}));
-//            }
-//            return deferred.promise;
-//        };
-//        
-//        
-//        /**
-//         * @ngdoc method
-//         * @name HistoryValue.create
-//         * @function
-//         * 
-//         * @description Create new HistoryValue object and populate with values.
-//         * This function must be called before calling HistoryValue.save()
-//         * to create save object.
-//         * @param {Object} params Initial metadata for object.
-//         *  'store_location' (String), required, - either 'history','local' or 'drive'
-//         *  'name' (String), required if [store_location] is 'local' or 'drive',
-//         *  'project_name' (String), optional - Associated project name.
-//         * @example 
-//         *  HistoryValue.create({'store_location': 'local','name':'My request'});
-//         * 
-//         * 
-//         * @returns {undefined}
-//         */
-//        var create = function(params){
-//            
-//            if(!'store_location' in params){
-//                throw "You must add store_location to create HistoryValue object";
-//            }
-//            if((params.store_location === 'local' || params.store_location === 'drive') && !params.name){
-//                throw "You must specify file name to create HistoryValue object";
-//            }
-//            
-//            service.current = {};
-//            service.current.store_location = params.store_location;
-//            service.current.har = null;
-//            service.current.db = null;
-//            if(params.name){
-//                service.current.name = params.name;
-//            }
-//            if(params.project_name){
-//                service.current.project_name = params.project_name;
-//            }
-//            return service.current;
-//        };
-//        
-//        /**
-//         * @ngdoc method
-//         * @name HistoryValue.store
-//         * @function
-//         * 
-//         * @description Store current object into selected storage (depending on 'store_location').
-//         * 
-//         * @example 
-//         *  HistoryValue.store().then(function(storedObject){ ... });
-//         * 
-//         * 
-//         * @returns {$q@call;defer.promise} The promise with stored object.
-//         */
-//        var store = function(response){
-//            
-//            if(service.current === null){
-//                throw 'There\'s no object to store.';
-//            }
-//            var deferred = $q.defer();
-//            var storeService;
-//            switch(service.current.store_location){
-//                case 'local': 
-//                case 'history': storeService = Filesystem; break;
-//                case 'drive': storeService = DriveService; break;
-//                default:
-//                    deferred.reject('Unknown store location :(');
-//                    return deferred.promise;
-//            }
-//            
-//            var onResult = function(result){
-//                service.current.file = result;
-//                
-//                ///updateDat
-//                var storeData;
-//                if(service.current.db === null){
-//                    storeData = {
-//                        'url': response.request.url,
-//                        'method': response.request.method,
-//                        'type': service.current.store_location,
-//                        'project_name': null,
-//                        'name': null,
-//                        'file': null,
-//                        'drive': null
-//                    };
-//                } else {
-//                    storeData = service.current.db;
-//                }
-//                
-//                DBService.store(storeData).then(function(e){
-//                    deferred.resolve(result);
-//                });
-//                
-//            };
-//            
-//            storeService.store(service.current)
-//            .then(onResult)
-//            .catch(function(reason){
-//                deferred.reject(reason);
-//            });
-//            return deferred.promise;
-//        };
-//        
-//        var restoreCurrent = function(dbKey){
-//            DBService.restore(dbKey).then(function(result){
-//                console.log(dbKey, result);
-//            });
-//            //service.current.db
-//        };
-//        
-//        service = {
-//            /**
-//             * restored object currently loaded into app
-//             */
-//            'current': null,
-//            'create': create,
-//            'store': store,
-//            'getOrCreate': getCurrent,
-//            'restoreCurrent': restoreCurrent
-//        };
-//        return service;
-//}]);

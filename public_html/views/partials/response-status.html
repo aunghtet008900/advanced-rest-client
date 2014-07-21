@@ -1,6 +1,8 @@
 <section ng-if="!!status.code" class="row form-group">
     <div class="col-md-12">
         <div class="card">
+            <div class="paper-shadow paper-shadow-bottom-z-1"></div>
+            <div class="paper-shadow paper-shadow-top-z-1"></div>
             <div class="cart-title">
                 Status
             </div>
@@ -13,14 +15,17 @@
                 </div>
                 <div class="pull-right">
                     <div class="btn-group">
-                        <button type="button" class="btn btn-default btn-sm" ng-click="$event.preventDefault(); executeCommand()('har')">copy as HAR</button>
+                        <button type="button" class="btn btn-default btn-sm" ng-click="$event.preventDefault();
+                            executeCommand()('har')">copy as HAR</button>
                         <button type="button" class="btn btn-default dropdown-toggle btn-sm" data-toggle="dropdown">
                             <span class="caret"></span>
                             <span class="sr-only">Toggle Dropdown</span>
                         </button>
                         <ul class="dropdown-menu pull-right" role="menu">
-                            <li><a href="#" ng-click="$event.preventDefault(); executeCommand()('curl')">copy as CURL command</a></li>
-                            <li><a href="#" ng-click="$event.preventDefault(); executeCommand()('history')">show recorded response</a></li>
+                            <li><a href="#" ng-click="$event.preventDefault();
+                                executeCommand()('curl')">copy as CURL command</a></li>
+                            <li><a href="#" ng-click="$event.preventDefault();
+                                executeCommand()('history')">show recorded response</a></li>
                         </ul>
                     </div>
                     <div class="clearfix"></div>

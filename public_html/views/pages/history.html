@@ -1,1 +1,24 @@
-history PAGE
+<div layout horizontal center>
+    <div class="btn-group">
+        <label class="btn btn-default" ng-model="selectedView" btn-radio="'history'">History</label>
+        <label class="btn btn-default" ng-model="selectedView" btn-radio="'saved'">Saved</label>
+        <label class="btn btn-default" ng-model="selectedView" btn-radio="'drive'">Google Drive &trade;</label>
+    </div>
+</div>
+<div class="col-md-12">
+    <div class="row">
+        <input ng-model="query" placeholder="Search history">
+    </div>
+</div>
+
+<div layout vertical >
+    <div ng-repeat="entry in entries.all | filter:query" data-type="{{entry.type}}" class="">
+        <div class="card polymer-item" layout horizontal >
+            <div class="paper-shadow paper-shadow-bottom-z-1"></div>
+            <div class="paper-shadow paper-shadow-top-z-1"></div>
+            <div class="item-method">{{entry.method}}</div>
+            <div class="item-url" flex>{{entry.url}}</div>
+            <div class="item-time">{{entry.update|date:'M/d/yy h:mm a'}}</div>
+        </div>
+    </div>
+</div>

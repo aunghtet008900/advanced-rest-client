@@ -407,7 +407,55 @@ ArcControllers.controller('ResponseController', [
 }]);
 
 ArcControllers.controller('SocketController', ['$scope', function($scope){}]);
-ArcControllers.controller('HistoryController', ['$scope', function($scope){}]);
+ArcControllers.controller('HistoryController', ['$scope','history', function($scope,history){
+    
+    $scope.entries = {
+//        'local': [],
+//        'history': [],
+//        'drive': [],
+        'all': []
+    };
+    $scope.search = {
+        'value': ''
+    };
+    $scope.selectedView = 'history';
+    
+    var _restoreHistory = function(){
+        history.list().then(function(entries){
+            entries = entries.sort(function(a,b){
+                a.update = a.update || 0;
+                b.update = b.update || 0;
+                if(a.update < b.update){
+                    return 1;
+                }
+                if(a.update > b.update){
+                    return -1;
+                }
+                return 0;
+            });
+            
+//            var local = entries.filter(function(item){
+//                return item.type === 'local';
+//            });
+//            var history = entries.filter(function(item){
+//                return item.type === 'history';
+//            });
+//            var drive = entries.filter(function(item){
+//                return item.type === 'drive';
+//            });
+            
+            console.log(entries);
+            $scope.entries.all = entries;
+//            $scope.entries.local = local;
+//            $scope.entries.history = history;
+//            $scope.entries.drive = drive;
+        }).catch(function(error){
+            console.log(error);
+        });
+    };
+    
+    _restoreHistory();
+}]);
 ArcControllers.controller('CollectionsController', ['$scope', function($scope){}]);
 ArcControllers.controller('SettingsController', ['$scope','analytics','$timeout', function($scope,analytics,$timeout){
     analytics.view('Settnigs');
