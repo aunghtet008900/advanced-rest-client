@@ -170,7 +170,7 @@ ArcControllers.controller('ResponseController', [
     function($scope, APP_EVENTS, CodeMirror, $timeout, ViewWorkersService, ResponseUtils, analytics){
     
     $scope.$on(APP_EVENTS.END_REQUEST, function(e,response){
-        console.log(response);
+//        console.log(response);
         $timeout(function(){
             ct = null;
             cmHighlight = false;

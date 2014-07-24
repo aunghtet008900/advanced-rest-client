@@ -112,7 +112,7 @@ angular.module('arc.httpService', [])
             'url': requestObject.url,
             'method': requestObject.method,
             'timeout': 30000,
-            'debug': true
+            'debug': false
         };
         
         if(RequestValues.hasPayload() && requestObject.payload){

@@ -117,6 +117,7 @@ angular.module('arc.history', [])
 
 
                     function updateHistoryObject_(data) {
+                        
                         if (!current) {
                             throw "No object to update!";
                         }
@@ -142,11 +143,12 @@ angular.module('arc.history', [])
                                 current.file = storeData.file = {name: fileName + '.json'};
                             }
                             return db.store(storeData).then(function(dbid) {
-                                window.console.log('insert key: ', dbid);
                                 current.key = dbid;
                             }).then(updateFile);
                         } else {
-                            return db.store(current).then(updateFile);
+                            var toSave = angular.copy(current);
+                            delete toSave['har'];
+                            return db.store(toSave).then(updateFile);
                         }
                     }
 
@@ -167,7 +169,7 @@ angular.module('arc.history', [])
                     }
 
                     function updateFile() {
-                        return _getStoreService().store(current);
+                        return _getStoreService().store(current, syncable);
                     }
 
                     /**

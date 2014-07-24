@@ -1,24 +1,42 @@
-<div layout horizontal center>
-    <div class="btn-group">
-        <label class="btn btn-default" ng-model="selectedView" btn-radio="'history'">History</label>
-        <label class="btn btn-default" ng-model="selectedView" btn-radio="'saved'">Saved</label>
-        <label class="btn btn-default" ng-model="selectedView" btn-radio="'drive'">Google Drive &trade;</label>
-    </div>
-</div>
-<div class="col-md-12">
-    <div class="row">
-        <input ng-model="query" placeholder="Search history">
+
+<div layout horizontal>
+    <input flex ng-model="query" placeholder="Search history" class="arc-input">
+    <button class="arc-button space">OPEN FROM DRIVE &trade;</button>
+    <span flex></span>
+    <div layout horizontal center>
+        <button class="arc-button space" ng-model="selectedView" btn-radio="'history'" tabindex="0">History</button>
+        <button class="arc-button space" ng-model="selectedView" btn-radio="'saved'" tabindex="0">Saved</button> <!-- entry.name != null && entry.type != drive -->
+        <button class="arc-button space" ng-model="selectedView" btn-radio="'drive'" tabindex="0">Google Drive &trade;</button> <!-- entry.type == drive -->
     </div>
 </div>
 
-<div layout vertical >
-    <div ng-repeat="entry in entries.all | filter:query" data-type="{{entry.type}}" class="">
-        <div class="card polymer-item" layout horizontal >
-            <div class="paper-shadow paper-shadow-bottom-z-1"></div>
-            <div class="paper-shadow paper-shadow-top-z-1"></div>
-            <div class="item-method">{{entry.method}}</div>
-            <div class="item-url" flex>{{entry.url}}</div>
-            <div class="item-time">{{entry.update|date:'M/d/yy h:mm a'}}</div>
+<div class="empty history-list"><div ng-repeat="entry in entries.all| filter:{'$':query} | historyView:selectedView" data-type="{{entry.type}}" >
+        <div class="card polymer-item" layout vertical history-item>
+            <item layout horizontal center>
+                <div class="paper-shadow paper-shadow-bottom-z-1"></div>
+                <div class="paper-shadow paper-shadow-top-z-1"></div>
+                <div class="item-method">{{entry.method}}</div>
+                <div class="item-url" flex>{{entry.url}}</div>
+                <div class="item-time">{{entry.update|date:'M/d/yy h:mm a'}}</div>
+                <button class="arc-button inline-button" tabindex="0">USE</button>
+                <button class="arc-button inline-button vert-button" open>
+                    <svg viewBox="0 0 24 24" style="pointer-events: none; width: 24px; height: 24px; display: block;"><g><path d="M12,8c1.1,0,2-0.9,2-2s-0.9-2-2-2c-1.1,0-2,0.9-2,2S10.9,8,12,8z M12,10c-1.1,0-2,0.9-2,2s0.9,2,2,2c1.1,0,2-0.9,2-2S13.1,10,12,10z M12,16c-1.1,0-2,0.9-2,2s0.9,2,2,2c1.1,0,2-0.9,2-2S13.1,16,12,16z"></path></g></svg>
+                </button>
+            </item>
+            <item details>
+                <div class="loading" horizontal center-justified layout><div>a moment please...</div></div>
+                <div ng-if="fill" class="data">
+                    <div ng-repeat="hentry in fill.log.entries" horizontal layout center class="item">
+                        <!--<span flex>{{hentry.request.headers.length}} headers</span>-->
+                        <ng-pluralize flex count="hentry.request.headers.length" when="{'one': '1 header', 'other': '{} headers'}"></ng-pluralize>
+                        <span class="item-time">{{fill.log.pages[$index].startedDateTime|date:'M/d/yy h:mm:ss a'}}</span>
+                        <button class="arc-button inline-button" tabindex="0">USE</button>
+                        <button class="arc-button inline-button" tabindex="0">DELETE</button>
+                    </div>
+                </div>
+                <div ng-if="!fill" class="data" horizontal center-justified layout>
+                    <div>No detailed history available.</div>
+                </div>
+            </item>
         </div>
-    </div>
-</div>
+    </div></div>

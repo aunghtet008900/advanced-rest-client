@@ -233,6 +233,7 @@ angular.module('arc.persistantService', [])
                  * @returns {$q@call;defer.promise}
                  */
                 var writeFileEntry = function(fileEntry, data, mime) {
+//                    console.log('writeFileEntry', fileEntry, data, mime);
                     var defered = $q.defer();
                     fileEntry.createWriter(function(fileWriter) {
                         fileWriter.onwriteend = function(e) {
@@ -335,6 +336,10 @@ angular.module('arc.persistantService', [])
                  * @returns {$q@call;defer.promise} The promise with {LocalItem} object.
                  */
                 var store = function(localItem, syncable) {
+//                    console.group('store');
+//                    console.log('localItem', localItem);
+//                    console.log('syncable', syncable);
+//                    console.groupEnd();
                     if (!localItem.file.name) {
                         throw Error("Filename not set");
                     }

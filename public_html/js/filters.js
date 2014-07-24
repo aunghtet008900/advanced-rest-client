@@ -2,13 +2,13 @@
 
 /* Filters */
 
-var ArcFilters = angular.module('arc.filters', []);
-ArcFilters.filter('interpolate', ['version', function(version) {
+angular.module('arc.filters', [])
+.filter('interpolate', ['version', function(version) {
         return function(text) {
             return String(text).replace(/\%VERSION\%/mg, version);
         };
-    }]);
-ArcFilters.filter('filesize', [function() {
+    }])
+.filter('filesize', [function() {
         return function(text) {
             var value = parseInt(text);
             var units = ['bytes','KB','MB','GB','TB'];
@@ -19,8 +19,8 @@ ArcFilters.filter('filesize', [function() {
                 value = value/1024;
             }
         };
-    }]);
-ArcFilters.filter('locationheader', [function() {
+    }])
+.filter('locationheader', [function() {
         return function(headers) {
             for(var i=0, len=headers.length;i<len;i++){
                 if(headers[i].name.toLowerCase() === 'location'){
@@ -29,4 +29,23 @@ ArcFilters.filter('locationheader', [function() {
             }
             return '[unknown]';
         };
-    }]);
+    }])
+.filter('historyView', [function() {
+        return function(arr, currentView) {
+            if(!arr) return;
+            if(!currentView) return;
+            
+            if(currentView === 'history') return arr;
+            if(currentView === 'saved') return arr.filter(function(entry){
+                if(!entry.name) return false;
+                if(entry.type === 'drive') return false;
+                return true;
+                //entry.name != null && entry.type != drive
+            });
+            if(currentView === 'drive') return arr.filter(function(entry){
+                if(entry.type === 'drive') return true;
+                //entry.type == drive
+                return false;
+            });
+        };
+}]);

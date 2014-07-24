@@ -8,7 +8,7 @@ html{
 body {
     font-family: $font-main;
     color: $primary-color;
-    background-color: #EBEBEB;
+    background-color: #eeeeee;
     font-size: 14px;
     font-style: normal;
     font-variant: normal;
@@ -175,9 +175,9 @@ label.collapse-form {
     background-color: #fff;
     padding: 1em;
     margin: 1em;
-    
+
     position: relative;
-    
+
     .cart-title{
         font-weight: bold;
         margin: 0px 0 7px 0;
@@ -565,4 +565,86 @@ p.bg-warning{
 .item-method {
     font-weight: bold;
     margin-right: 1em;
+}
+
+.arc-input{
+    border: none;
+    background: transparent;
+    border-bottom: 1px #666 solid;
+    outline: none;
+    padding: 0 0.5em;
+    margin: 0 1em;
+}
+.arc-button{
+    background: transparent;
+    text-transform: uppercase;
+    display: inline-block;
+    font-weight: normal;
+    cursor: pointer;
+    border: 1px transparent solid;
+    vertical-align: middle;
+    line-height: normal;
+    margin: 0;
+    padding: 0;
+
+    &.space{
+        padding: 0.5em 1em;
+        margin: 0.4em 0.5em;
+    }
+    &.inline-button{
+        padding: 0em 0.5em;
+        margin: 0em 0.5em;
+    }
+    &.active{
+        background-color: #fff;
+    }
+    &:hover{
+        border-color: #bdbdbd;
+    }
+    &:active{
+        background-color: #f5f5f5;
+    }
+}
+.empty{ 
+    &:empty {
+        background-color: transparent;
+        margin: 2em;
+        text-align: center;
+        font-size: 120%;
+        font-style: italic;
+        &:after {
+            content: " Nothing to show right now... ";
+        }
+    }
+}
+.history-list{
+    margin-top: 3em;
+}
+[history-item]{
+    [details]{
+        display:none;
+
+        &.opened{
+            display:block;
+
+            &.filled{
+
+                .loading{
+                    display:none;
+                }
+                .data{
+                    display:block;
+                }
+
+                .item{
+                    margin: 2em 0;
+                }
+            }
+
+            .data{
+                display:none;
+            }
+
+        }
+    }
 }
