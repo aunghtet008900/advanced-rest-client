@@ -1126,21 +1126,8 @@ angular.module('chrome.http', [])
             console.log(performance.now(), 'Response ready');
         }
         
-        var connectionInfo = {
-            'metrics': {
-                start: this.connection.metrics.startTimestamp,
-                end: this.connection.metrics.endTimestamp
-            },
-            'aborted': this.connection.aborted,
-            'timeout': this.connection.isTimeout
-        };
-        
-        
-        this.dispatchEvent('load', {
-            'request': this.request.data,
-            'response': this.response.data,
-            'connection': connectionInfo
-        });
+        var data = this._collectResponseData();
+        this.dispatchEvent('load', data);
     };
     
     ChromeTcpConnection.prototype._close = function(){
@@ -1180,13 +1167,38 @@ angular.module('chrome.http', [])
                 });
             } else {
                 console.log('Some other error.');
+                this.dispatchEvent('error', {
+                    'code': info.resultCode,
+                    'message': 'An error occurred during the request.',
+                    'data': this._collectResponseData()
+                });
             }
         }
         
         //this._cleanUpResponse();
         this._close();
-        
     };
+    /**
+     * Try to collect as many data as it can.
+     * @returns {undefined}
+     */
+    ChromeTcpConnection.prototype._collectResponseData = function(){
+        var connectionInfo = {
+            'metrics': {
+                start: this.connection.metrics.startTimestamp,
+                end: this.connection.metrics.endTimestamp
+            },
+            'aborted': this.connection.aborted,
+            'timeout': this.connection.isTimeout
+        };
+        var result = {
+            'request': this.request.data,
+            'response': this.response.data,
+            'connection': connectionInfo
+        };
+        return result;
+    };
+    
     
     ChromeTcpConnection.prototype._cleanUpResponse = function(){
         delete this.response.chunkPayload;

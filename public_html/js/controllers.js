@@ -410,9 +410,6 @@ ArcControllers.controller('SocketController', ['$scope', function($scope){}]);
 ArcControllers.controller('HistoryController', ['$scope','history', function($scope,history){
     
     $scope.entries = {
-//        'local': [],
-//        'history': [],
-//        'drive': [],
         'all': []
     };
     $scope.search = {

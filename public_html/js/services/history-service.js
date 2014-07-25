@@ -51,34 +51,55 @@ angular.module('arc.history', [])
                     /**
                      * Before actuall store the app must ensure that request 
                      * hasn't change since last call / restoration.
-                     * Further it will operate on datastore record that need 
+                     * Next, it will operate on datastore record that need 
                      * to be valid for current request.
+                     * 
+                     * After datastore object is restored, associated file 
+                     * should be read to have full HAR object.
                      * 
                      * @returns {undefined}
                      */
                     var _preSaveHistory = function(data, name, project) {
-                        var deferred = $q.defer();
-
                         if (!_requestEqual(data.request)) {
                             current = null;
                         }
 
                         if (current === null) {
-                            db.restore(db.createKey(data.request.url, data.request.method))
-                                    .then(function(restored) {
-                                        if (restored) {
-                                            current = restored;
-                                            current.name = name;
-                                            current.project_name = project;
-                                        }
-                                        deferred.resolve();
-                                    })
+                            var key = db.createKey(data.request.url, data.request.method);
+                            return _restoreDbObject(key, name, project)
                                     .catch(function() {
                                         //do nothing
                                     });
-                        } else {
-                            deferred.resolve();
+                        } else if (!current.har) {
+                            return _restoreFileObject();
                         }
+                        var deferred = $q.defer();
+                        deferred.resolve();
+                        return deferred.promise;
+                    };
+
+                    var _restoreDbObject = function(key, name, project) {
+                        return db.restore(key)
+                                .then(function(restored) {
+                                    if (restored) {
+                                        current = restored;
+                                        current.name = name;
+                                        current.project_name = project;
+                                    }
+                                })
+                                .then(_restoreFileObject);
+                    };
+                    var _restoreFileObject = function() {
+                        if (current.file && current.file.name) {
+                            return getHistoryFileEntry(current.file.name).then(function(har) {
+                                try {
+                                    current.har = JSON.parse(har);
+                                } catch (e) {
+                                }
+                            });
+                        }
+                        var deferred = $q.defer();
+                        deferred.resolve();
                         return deferred.promise;
                     };
 
@@ -100,6 +121,13 @@ angular.module('arc.history', [])
                     function saveHistory(data, name, project) {
                         name = name || null;
                         project = project || null;
+
+                        if (!data.request) {
+                            var deferred = $q.defer();
+                            deferred.resolve();
+                            return deferred.promise;
+                        }
+
                         return _preSaveHistory(data, name, project).then(function() {
                             if (current === null) {
                                 current = create_({'type': name ? 'local' : 'history', name: name, project_name: project});
@@ -117,7 +145,7 @@ angular.module('arc.history', [])
 
 
                     function updateHistoryObject_(data) {
-                        
+
                         if (!current) {
                             throw "No object to update!";
                         }
