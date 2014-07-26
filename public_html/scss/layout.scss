@@ -1,0 +1,146 @@
+@import 'defs';
+html{
+    overflow: auto;
+}
+body {
+    font-family: $font-main;
+    color: $primary-color;
+    background-color: #eeeeee;
+    font-size: 14px;
+    font-style: normal;
+    font-variant: normal;
+    font-weight: 300;
+}
+html, body{
+    height:100%;
+    margin:0;
+    overflow: auto;
+}
+
+:host{
+    font-family: RobotoDraft;
+}
+
+[drawer] {
+    background-color: #fff;
+}
+
+[main] > div {
+    padding: 2em;
+}
+
+[drawer] > core-item{
+    padding: 1em;
+}
+[main] paper-checkbox {
+    margin-right: 1em;
+}
+[main] {
+    height: 100%;
+    background-color: #f1f1f3;
+}
+[drawer] core-toolbar{
+    background-color: #4f7dc9;
+    color: #fff;
+}
+[main] core-toolbar{
+    background-color: #526e9c;
+    color: #fff;
+}
+.polymer-item{
+    position:relative;
+}
+.empty{ 
+    &:empty {
+        background-color: transparent;
+        margin: 2em;
+        text-align: center;
+        font-size: 120%;
+        font-style: italic;
+        &:after {
+            content: " Nothing to show right now... ";
+        }
+    }
+}
+.select-text{
+    -webkit-user-select: text;
+    user-select: text;
+    cursor: text;
+    word-break: break-all;
+}
+#appContainer{
+    display: flex;
+    align-content: stretch;
+    flex-direction: row;
+    height: 100%;
+
+    #appNav{
+        width: 80px;
+        position: relative;
+
+        menu{
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            background-color: #333333;
+            position: fixed;
+            width: 80px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            li{
+
+                height: 60px;
+                align-items: flex-end;
+                display: flex;
+                justify-content: center;
+                padding: 5px 0;
+                border-bottom: 1px #666666 solid;
+                cursor: pointer;
+                a{
+                    color: #fff;
+                }
+            }
+            li.selected,li.selected:hover{
+                background-color: #5A5A5A;
+            }
+            li:hover{
+                background-color: #3f3f3f;
+            }
+            li.streach {
+                flex: 1 1 auto;
+                cursor: initial;
+            }
+            li.streach:hover{
+                background-color: initial;
+            }
+            li[user-profile] {
+                height: auto;
+            }
+        }
+    }
+    .container{
+        flex: 1;
+    }
+    .btn {
+        font-weight: 300;
+    }
+}
+
+.card {
+    /*width: 100%;*/
+    background-color: #fff;
+    padding: 1em;
+    margin: 1em;
+
+    position: relative;
+
+    .cart-title{
+        font-weight: bold;
+        margin: 0px 0 7px 0;
+
+        .title-dropdown{
+            margin-left: 2em;
+        }
+    }
+}

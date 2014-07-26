@@ -1,0 +1,38 @@
+.item-method {
+    font-weight: bold;
+    margin-right: 1em;
+}
+
+
+
+.history-list{
+    margin-top: 3em;
+}
+[history-item]{
+    [details]{
+        display:none;
+
+        &.opened{
+            display:block;
+
+            &.filled{
+
+                .loading{
+                    display:none;
+                }
+                .data{
+                    display:block;
+                }
+
+                .item{
+                    margin: 2em 0;
+                }
+            }
+
+            .data{
+                display:none;
+            }
+
+        }
+    }
+}

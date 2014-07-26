@@ -32,8 +32,7 @@ angular.module('arc.directives', [])
                                 } catch(e){
                                     return;
                                 }
-                                console.log(har);
-                                scope.fill = har;
+                                scope.entry.har = har;
                             });
                         };
 

@@ -16,6 +16,7 @@ angular.module('arc.httpService', [])
                 saveHistory(e);
             })
             .catch(function(e){
+                console.log('httpService error', e);
                 $rootScope.$broadcast(APP_EVENTS.REQUEST_ERROR, e);
                 saveHistory(e);
             });
