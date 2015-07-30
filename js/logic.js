@@ -2,10 +2,7 @@
  * URL field service.
  */
 function UrlFieldService() {
-    if (typeof window.restClientUI === 'undefined') {
-        throw "RestClientUI must be initialized first.";
-    }
-
+    
     this._value = null;
     this.expanded = false;
     /// Set to true when any value will change during
@@ -36,7 +33,7 @@ UrlFieldService.prototype = {
         }
         log('Current URL editor value is: ', this._value);
         //check if value is correct
-        var body = $('body');
+        var body = jQuery('body');
         if (this._value.isEmpty()) {
             body.trigger('formnotready');
         } else if (!/^[^\s"]*:\/\/[^\s"]+$/.test(this._value)) {
@@ -62,27 +59,26 @@ UrlFieldService.prototype = {
             this.expanded = false;
         }
         this.runTypehead();
-        panel.addEventListener('keydown', function(e){
-            if(e.keyCode !== 13) return;
+        panel.addEventListener('keydown', function(e) {
+            if (e.keyCode !== 13)
+                return;
             this._enterPress(e);
         }.bind(this), false);
     },
-            
-    _enterPress: function(e){
-        
-        if(this.lastEnterTime){
-            var delta = performance.now()-this.lastEnterTime;
-            if(delta < 1000){
+    _enterPress: function(e) {
+
+        if (this.lastEnterTime) {
+            var delta = performance.now() - this.lastEnterTime;
+            if (delta < 1000) {
                 return;
             }
         }
         this.onInputChanage(e);
         this.lastEnterTime = performance.now();
-        window.restClient.startRequest();
+        jQuery('body').trigger('request.begin');
     },
-    
     runTypehead: function() {
-//        $('#full-request-url').typeahead({
+//        jQuery('#full-request-url').typeahead({
 //            name: 'trends',
 //            prefetch: 'https://twitter.com/trends.json'
 ////            'source': function(query, process) {
@@ -144,7 +140,7 @@ UrlFieldService.prototype = {
         }
         var params = Array.prototype.slice.call(paramsContainers);
         params.forEach(function(item) {
-            var values = window.restClientUI.extractQueryParamsValues(item);
+            var values = window.restClientRequestUI.extractQueryParamsValues(item);
             if (values[0] === "" && values[1] === "") {
                 return;
             }
@@ -156,7 +152,7 @@ UrlFieldService.prototype = {
         if (e.target.dataset['action']) {
             switch (e.target.dataset['action']) {
                 case 'encode-query-param':
-                    var values = window.restClientUI.extractQueryParamsInputs(e.target.parentNode.parentNode);
+                    var values = window.restClientRequestUI.extractQueryParamsInputs(e.target.parentNode.parentNode);
                     var key = encodeURIComponent(values[0].value);
                     var value = encodeURIComponent(values[1].value);
                     if (e.ctrlKey) {
@@ -167,7 +163,7 @@ UrlFieldService.prototype = {
                     values[1].value = value;
                     break;
                 case 'decode-query-param':
-                    var values = window.restClientUI.extractQueryParamsInputs(e.target.parentNode.parentNode);
+                    var values = window.restClientRequestUI.extractQueryParamsInputs(e.target.parentNode.parentNode);
                     var key = values[0].value;
                     var value = values[1].value;
                     if (e.ctrlKey) {
@@ -192,7 +188,7 @@ UrlFieldService.prototype = {
             var value = this.getFromDetailedUrl();
             this.value = value;
             this.expandedChange = false;
-            window.restClientUI.clearAllQueryParamsRows();
+            window.restClientRequestUI.clearAllQueryParamsRows();
         } else {
             this.expanded = true;
             var uri = this.parseUrlToDetails(this.value);
@@ -210,9 +206,9 @@ UrlFieldService.prototype = {
         }
         pathInput.value = uri.path();
         hashInput.value = uri.anchor();
-        window.restClientUI.clearAllQueryParamsRows();
+        window.restClientRequestUI.clearAllQueryParamsRows();
         uri.queryPairs.forEach(function(q) {
-            window.restClientUI.appendUrlQueryParamRow(q[0], q[1]);
+            window.restClientRequestUI.appendUrlQueryParamRow(q[0], q[1]);
         });
     },
     //TODO: it does'n make sense thai it is here. To be moved.
@@ -254,8 +250,8 @@ HeadersInputService.prototype = {
     },
     set value(val) {
         this._value = val;
-        if (restClientUI.headersCodeMirror !== null) {
-            restClientUI.headersCodeMirror.setValue(val);
+        if (restClientRequestUI.headersCodeMirror !== null) {
+            restClientRequestUI.headersCodeMirror.setValue(val);
         } else {
             var input = this.getRawInput();
             if (input.value !== val) {
@@ -265,14 +261,14 @@ HeadersInputService.prototype = {
         if (this.formOpened) {
             var headers = HttpHeadersParser.fromString(val);
             if (headers !== null) {
-                window.restClientUI.clearAllHttpHeadersRows();
+                window.restClientRequestUI.clearAllHttpHeadersRows();
                 headers.forEach(function(header) {
-                    window.restClientUI.appendHttpDataRow('header', header.key, header.value);
+                    window.restClientRequestUI.appendHttpDataRow('header', header.key, header.value);
                 });
             }
         }
         log('Current HTTP Headers value is: ', this._value);
-        $(document.body).trigger('headerchange', this._value);
+        jQuery(document.body).trigger('headerchange', this._value);
     },
     get value() {
         if (this.formOpened) {
@@ -281,8 +277,8 @@ HeadersInputService.prototype = {
                 this._value = HttpHeadersParser.toString(_list);
                 this.formChange = false;
             }
-        } else if (restClientUI.headersCodeMirror !== null) {
-            this._value = restClientUI.headersCodeMirror.getValue();
+        } else if (restClientRequestUI.headersCodeMirror !== null) {
+            this._value = restClientRequestUI.headersCodeMirror.getValue();
         } else {
             this._value = this.getRawInput().value;
         }
@@ -307,7 +303,7 @@ HeadersInputService.prototype = {
         }.bind(this), false);
     },
     observeTabsChange: function() {
-        $('#HttpHeadersPanel a[data-toggle="tab"]').on('show.bs.tab', function(e) {
+        jQuery('#HttpHeadersPanel a[data-toggle="tab"]').on('show.bs.tab', function(e) {
             if (e.target.dataset['target'].indexOf('Raw') !== -1) {
                 // opened raw form
                 var values = this.getFromHeaders();
@@ -315,17 +311,17 @@ HeadersInputService.prototype = {
                 this.value = headers;
                 this.formChange = false;
                 this.formOpened = false;
-                window.restClientUI.clearAllHttpHeadersRows();
+                window.restClientRequestUI.clearAllHttpHeadersRows();
             } else {
                 //opened form tab
                 var headers = HttpHeadersParser.fromString(this.value);
-                window.restClientUI.clearAllHttpHeadersRows();
+                window.restClientRequestUI.clearAllHttpHeadersRows();
                 if (headers !== null) {
                     headers.forEach(function(header) {
-                        window.restClientUI.appendHttpDataRow('header', header.key, header.value);
+                        window.restClientRequestUI.appendHttpDataRow('header', header.key, header.value);
                     });
                 }
-                window.restClientUI.ensureFormHasRow("header");
+                window.restClientRequestUI.ensureFormHasRow("header");
                 this.formOpened = true;
             }
         }.bind(this));
@@ -339,7 +335,7 @@ HeadersInputService.prototype = {
                 result = [],
                 params = Array.prototype.slice.call(paramsContainers);
         params.forEach(function(item) {
-            var values = window.restClientUI.extractHttpHeadersValues(item);
+            var values = window.restClientRequestUI.extractHttpHeadersValues(item);
             result[result.length] = values;
         });
         return result;
@@ -349,7 +345,7 @@ HeadersInputService.prototype = {
         var observeForTypehead = function(input) {
             var currentValues = [];
             return;
-            $(input).typeahead({
+            jQuery(input).typeahead({
                 'source': function(query, process) {
                     var keyRange,
                             options = {};
@@ -460,19 +456,16 @@ function PayloadInputService() {
 }
 PayloadInputService.prototype = {
     constructor: PayloadInputService,
-    
     set filesCount(cnt) {
         this._filesCount = cnt;
         var display = document.querySelector('#HttpFilesCounter');
-        if(display){
-            display.innerText = '('+cnt+')';
+        if (display) {
+            display.innerText = '(' + cnt + ')';
         }
     },
-    
     get filesCount() {
         return this._filesCount;
     },
-    
     initialize: function() {
         this.observeMethod();
         this.observeFormChange();
@@ -492,22 +485,22 @@ PayloadInputService.prototype = {
         if (input.value !== val) {
             input.value = val;
         }
-        if(this.formPanelOpened === true && this.encodingValueError === false){
-            window.restClientUI.clearAllPayloadRows();
+        if (this.formPanelOpened === true && this.encodingValueError === false) {
+            window.restClientRequestUI.clearAllPayloadRows();
             var payloadArray = HttpPayloadParser.fromString(val, true);
             if (payloadArray !== null && payloadArray.length > 0) {
                 payloadArray.forEach(function(data) {
-                    window.restClientUI.appendHttpDataRow('payload', data.key, data.value);
+                    window.restClientRequestUI.appendHttpDataRow('payload', data.key, data.value);
                 });
             }
-            window.restClientUI.ensureFormHasRow("payload");
+            window.restClientRequestUI.ensureFormHasRow("payload");
             this.formChange = false;
         }
         log('Current payload value is: ', this._value);
-        $(document.body).trigger('payloadchange', this._value);
+        jQuery(document.body).trigger('payloadchange', this._value);
     },
     get value() {
-        if(this.formPanelOpened === true && this.encodingValueError === false){
+        if (this.formPanelOpened === true && this.encodingValueError === false) {
             //get value from the form
             var payload = this.getPayloadFromForm();
             this._value = payload;
@@ -523,42 +516,44 @@ PayloadInputService.prototype = {
      * 
      * @returns {Array}
      */
-    get files(){
+    get files() {
         var allFields = document.querySelectorAll('#HttpPayloadFiles .request-payload-file-row'),
-            rows = Array.prototype.slice.call(allFields),
-            result = [];
-        rows.forEach(function(row){
+                rows = Array.prototype.slice.call(allFields),
+                result = [];
+        rows.forEach(function(row) {
             var fileInput = row.querySelector('.request-payload-file-field');
             var nameInput = row.querySelector('.request-payload-file-name');
-            if(!fileInput || !nameInput) return;
-            if(fileInput.files.length === 0 || nameInput.value.isEmpty()) return;
+            if (!fileInput || !nameInput)
+                return;
+            if (fileInput.files.length === 0 || nameInput.value.isEmpty())
+                return;
             result[result.length] = {
                 'key': nameInput.value,
                 'value': fileInput.files
             };
         });
-        
+
         return result;
     },
-    
     /**
      * @param {Array} namesArr The array of strings
      * @type Array the array od String
      */
     set filenames(namesArr) {
-        if(namesArr && namesArr.length > 0){
+        if (namesArr && namesArr.length > 0) {
             this.restoredFileNames = namesArr;
+            this._applyFilesNames();
+        } else {
+            this.restoredFileNames = [];
             this._applyFilesNames();
         }
     },
-    
-    getPayloadFromForm: function(){
+    getPayloadFromForm: function() {
         var values = this.getFromPayloadForm();
         return HttpPayloadParser.toString(values, true);
     },
-    
     observeMethod: function() {
-        $('body').on('httpmethodchange', function(e, currentMethod) {
+        jQuery('body').on('httpmethodchange', function(e, currentMethod) {
             var getMethods = 'GET,HEAD'.split(',');
             if (getMethods.indexOf(currentMethod) !== -1) {
                 //remove content type header and save it in private field
@@ -588,7 +583,7 @@ PayloadInputService.prototype = {
             }
         }.bind(this));
 
-        $(document.body).on('headerchange', function(e, value) {
+        jQuery(document.body).on('headerchange', function(e, value) {
             if (!value || value === "") {
                 this.latestUsedContentType = this.currentContentType;
                 this.currentContentType = null;
@@ -617,16 +612,16 @@ PayloadInputService.prototype = {
         }.bind(this), false);
     },
     observeTabsChange: function() {
-        $('#HttpPayloadPanel a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+        jQuery('#HttpPayloadPanel a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
             if (e.target.dataset['target'].indexOf('Raw') !== -1) {
-                if(this.encodingValueError){
+                if (this.encodingValueError) {
                     this.formChange = false;
                     this.removeErrorEncodingDialog();
                     this.encodingValueError = false;
-                    window.restClientUI.clearAllPayloadRows();
+                    window.restClientRequestUI.clearAllPayloadRows();
                     return;
                 }
-                if(this.formChange){
+                if (this.formChange) {
                     // opened raw form
                     var values = this.getFromPayloadForm();
                     var payload = HttpPayloadParser.toString(values, true);
@@ -635,25 +630,25 @@ PayloadInputService.prototype = {
                 }
                 this.formPanelOpened = false;
                 this.filesPanelOpened = false;
-                window.restClientUI.clearAllPayloadRows();
+                window.restClientRequestUI.clearAllPayloadRows();
             } else if (e.target.dataset['target'].indexOf('Form') !== -1) {
                 //opened form tab
                 var payloadArray = HttpPayloadParser.fromString(this.value, true);
-                if(this.value && payloadArray.length === 0){
+                if (this.value && payloadArray.length === 0) {
                     //it is value error
                     //not an application/x-www-form-urlencoded value
                     //should not replace RAW value if form is empty
                     this.encodingValueError = true;
                     this.createErrorEncodingDialog();
                 }
-                
-                window.restClientUI.clearAllPayloadRows();
+
+                window.restClientRequestUI.clearAllPayloadRows();
                 if (payloadArray !== null && payloadArray.length > 0) {
                     payloadArray.forEach(function(data) {
-                        window.restClientUI.appendHttpDataRow('payload', data.key, data.value);
+                        window.restClientRequestUI.appendHttpDataRow('payload', data.key, data.value);
                     });
                 }
-                window.restClientUI.ensureFormHasRow("payload");
+                window.restClientRequestUI.ensureFormHasRow("payload");
                 this.formPanelOpened = true;
                 this.filesPanelOpened = false;
             } else if (e.target.dataset['target'].indexOf('Files') !== -1) {
@@ -665,20 +660,15 @@ PayloadInputService.prototype = {
             }
         }.bind(this));
     },
-    
-    _applyFilesNames: function(){
-        if(this.restoredFileNames.length > 0){
-            window.restClientUI.clearAllFilesRows();
-            this.restoredFileNames.forEach(function(fieldName){
-                window.restClientUI.appendHttpDataRow('file', fieldName);
-            });
-            this.restoredFileNames = [];
-            window.restClientUI.ensureFormHasRow("file");
-        }
+    _applyFilesNames: function() {
+        window.restClientRequestUI.clearAllFilesRows();
+        this.restoredFileNames.forEach(function(fieldName) {
+            window.restClientRequestUI.appendHttpDataRow('file', fieldName);
+        });
+        this.restoredFileNames = [];
+        window.restClientRequestUI.ensureFormHasRow("file");
     },
-    
-    
-    createErrorEncodingDialog: function(){
+    createErrorEncodingDialog: function() {
         var container = document.querySelector('#HttpPayloadPanel > .tab-content');
         var wrap = document.createElement('div');
         var message = document.createElement('span');
@@ -688,27 +678,26 @@ PayloadInputService.prototype = {
         message.classList.add('errorPayloadMessage');
         button.className = 'errorPayloadButton btn btn-warning';
         buttonWrap.classList.add('errorPayloadButtonWrap');
-        
+
         message.innerText = 'It seams that current value is not x-www-form-urlencoded encoded. If you continue you will louse you current value entered to "raw" tab. Do you wish to continue?';
         button.innerText = 'Continue';
-        
+
         buttonWrap.appendChild(button);
         wrap.appendChild(message);
         wrap.appendChild(buttonWrap);
         container.appendChild(wrap);
-        
-        button.addEventListener('click',function(e){
+
+        button.addEventListener('click', function(e) {
             this.removeErrorEncodingDialog();
             this.encodingValueError = false;
         }.bind(this), false);
     },
-    removeErrorEncodingDialog: function(){
+    removeErrorEncodingDialog: function() {
         var container = document.querySelector('#HttpPayloadPanel > .tab-content .errorPayloadPopup');
-        if(container){
+        if (container) {
             container.parentNode.removeChild(container);
         }
     },
-    
     /**
      * Returns array of payload form objects ("key" and "value") from the form.
      * It only return a value if content-type headers is set to http-urlencoded or it is not present.
@@ -719,45 +708,43 @@ PayloadInputService.prototype = {
                 result = [],
                 params = Array.prototype.slice.call(paramsContainers);
         params.forEach(function(item) {
-            var values = window.restClientUI.extractPayloadValues(item);
+            var values = window.restClientRequestUI.extractPayloadValues(item);
             result[result.length] = values;
         });
         return result;
     },
-    
-    observeFileInputChange: function(){
+    observeFileInputChange: function() {
         var context = this;
-        
-        document.body.addEventListener('file.field.added', function(e){
+
+        document.body.addEventListener('file.field.added', function(e) {
             var inp = e.target.querySelectorAll('.request-payload-file-name'),
-                inputs = Array.prototype.slice.call(inp);
-            for(var i=0, len=inputs.length; i<len; i++){
+                    inputs = Array.prototype.slice.call(inp);
+            for (var i = 0, len = inputs.length; i < len; i++) {
                 var input = inputs[i];
                 var value = input.value;
-                if(value.isEmpty()){
-                    input.value = 'file_upload_'+i;
+                if (value.isEmpty()) {
+                    input.value = 'file_upload_' + i;
                 }
             }
             context.filesFieldsCount++;
         }, false);
-        
-        document.body.addEventListener('file.field.removed', function(e){
+
+        document.body.addEventListener('file.field.removed', function(e) {
             context.filesFieldsCount--;
             context.recountFilesInForm();
         }, false);
-        
-        document.querySelector('#HttpPayloadFiles').addEventListener('change', function(e){
-            if(e.target.classList.contains('request-payload-file-field')){
+
+        document.querySelector('#HttpPayloadFiles').addEventListener('change', function(e) {
+            if (e.target.classList.contains('request-payload-file-field')) {
                 context.recountFilesInForm();
             }
         }, false);
     },
-    
-    recountFilesInForm: function(){
+    recountFilesInForm: function() {
         var allFields = document.querySelectorAll('#HttpPayloadFiles .request-payload-file-field'),
-            inputs = Array.prototype.slice.call(allFields),
-            cnt = 0;
-        inputs.forEach(function(input){
+                inputs = Array.prototype.slice.call(allFields),
+                cnt = 0;
+        inputs.forEach(function(input) {
             cnt += input.files.length;
         });
         this.filesCount = cnt;
@@ -766,40 +753,77 @@ PayloadInputService.prototype = {
 
 
 window.restClientStore = {
-    initialized: false,
     statuses: null,
     history: null,
     requests: null,
     headers: null,
+    _initialized: [],
+    _callbacks: [],
+    length: 4,
+    getStore: function(callback){
+        if(this._initialized.length === this.length){
+           callback(this);
+           return;
+        }
+        this._callbacks.push({clb: callback, callee: arguments.callee.caller});
+    },
+    
+    _addInitialized: function(storeName){
+        this._initialized.push(storeName);
+        if(this._initialized.length === this.length){
+            this._runCallbacks();
+        }
+    },
+    
+    _runCallbacks: function(){
+        var callback = this._callbacks.shift();
+        if(!callback) return;
+        window.setTimeout(callback.clb.bind(callback.callee,this),0);
+        window.setTimeout(this._runCallbacks.bind(this),0);
+    },
+    
     initialize: function() {
-        if (window.restClientStore.initialized) {
+        if (window.restClientStore.running) {
             return;
         }
-        window.restClientStore.statuses = new IDBStore({
-            storeName: 'statuses',
-            onStoreReady: function() {
-                log('Initialized statuses storage');
-            }
+        
+        
+        chrome.runtime.getBackgroundPage(function(backgroundPage) {
+            var dbVer = backgroundPage.DB_VERSION;
+            window.restClientStore.statuses = new IDBStore({
+                storeName: 'statuses',
+                dbVersion: dbVer,
+                onStoreReady: function() {
+                    window.restClientStore._addInitialized('statuses');
+                    log('Initialized statuses storage');
+                }
+            });
+            window.restClientStore.headers = new IDBStore({
+                storeName: 'headers',
+                dbVersion: dbVer,
+                onStoreReady: function() {
+                    window.restClientStore._addInitialized('headers');
+                    log('Initialized headers storage');
+                }
+            });
+            window.restClientStore.history = new IDBStore({
+                storeName: 'history',
+                dbVersion: dbVer,
+                onStoreReady: function() {
+                    window.restClientStore._addInitialized('history');
+                    log('Initialized history storage');
+                }
+            });
+            window.restClientStore.requests = new IDBStore({
+                storeName: 'requests',
+                dbVersion: dbVer,
+                onStoreReady: function() {
+                    window.restClientStore._addInitialized('requests');
+                    log('Initialized requests storage');
+                }
+            });
+            window.restClientStore.running = true;
         });
-        window.restClientStore.headers = new IDBStore({
-            storeName: 'headers',
-            onStoreReady: function() {
-                log('Initialized headers storage');
-            }
-        });
-        window.restClientStore.history = new IDBStore({
-            storeName: 'history',
-            onStoreReady: function() {
-                log('Initialized history storage');
-            }
-        });
-        window.restClientStore.requests = new IDBStore({
-            storeName: 'requests',
-            onStoreReady: function() {
-                log('Initialized requests storage');
-            }
-        });
-        window.restClientStore.initialized = true;
     }
 };
 
@@ -835,113 +859,379 @@ function loadCodeMirror(callback) {
 
 
 
-var HttpHeadersParser = {
-    /**
-     * Parse HTTP headers input from string to array of a key:value pairs objects.
-     * @param {String} string Raw HTTP headers input
-     * @returns {Array} The arrao of key:value objects
-     */
-    fromString: function(string) {
-        if (string === null || string === "") {
-            return [];
-        }
-        var result = [],
-                headers = string.split(/[\r\n]/gim);
-        for (var i in headers) {
-            var line = headers[i].trim();
-            if (line.isEmpty())
-                continue;
-            var _tmp = line.split(/[:|\r\n]/gim, 2);
-            if (_tmp.length > 0) {
-                var obj = {
-                    key: _tmp[0]
-                };
-                if (_tmp.length > 1) {
-                    obj.value = _tmp[1].trim();
-                }
-                result[result.length] = obj;
-            }
-        }
-        return result;
-    },
-    /**
-     * Parse headers array to Raw HTTP headers string.
-     * @param {Array} array lisk of objects with "key" and "value" keys.
-     * @returns {String}
-     */
-    toString: function(array) {
-        var result = "";
-        for (var i = 0, len = array.length; i < len; i++) {
-            var header = array[i];
-            if (!result.isEmpty()) {
-                result += "\n";
-            }
-            var key = header.key,
-                    value = header.value;
-            if (key && value && !(key.isEmpty() && value.isEmpty())) {
-                result += key + ": " + value;
-            }
-        }
-        return result;
-    },
-    /**
-     * 
-     * @param {String} string The headers value.
-     * @returns {String|null} Content type value or null if not found.
-     */
-    getContentType: function(string) {
-        var headersList = HttpHeadersParser.fromString(string),
-                headersLength = headersList === null ? 0 : headersList.length,
-                foundContentType = null,
-                i = 0;
-        for (; i < headersLength; i++) {
-            var header = headersList[i];
-            if (!header.key)
-                continue;
-            if (header.key.toLowerCase().trim() === 'content-type') {
-                if (!header.value)
-                    return;
-                foundContentType = header.value;
-                break;
-            }
-        }
-        return foundContentType;
-    }
-};
+
 
 function RestClientApp() {
     this.router = null;
+    this.ga_service = null;
+    this.ga_tracker = null;
 }
 RestClientApp.prototype = {
     constructor: RestClientApp,
     initialize: function() {
+        this.initGA();
         //initialize routers
         this.observePageChange();
         window.restClientController.initilize();
         this.initializeRouter();
+        this.initializeShortcuts();
+        this.inistalizeEventHandlers();
+        this.initializeNavigationHandlers();
+    },
+    initGA: function() {
+        this.ga_service = analytics.getService('advanced_rest_client');
+        this.ga_service.getConfig().addCallback(function(config) {
+            var checkbox = document.getElementById('GA_enable_setting');
+            checkbox.checked = config.isTrackingPermitted();
+            checkbox.onchange = function() {
+                config.setTrackingPermitted(checkbox.checked);
+            };
+        });
+        this.ga_tracker = this.ga_service.getTracker('UA-18021184-6');
     },
     
-    observePageChange: function(){
-        document.querySelector('body').addEventListener("pagechangeevent", function(e) {
-            if(!e.detail) return;
-            var page = e.detail.page, action = null, params = null;
-            if(!page) return;
-            switch(page){
-                case 'history': 
-                    action = 'defaut';
-                    break;
-                case 'request': 
-                    action = 'defaut';
-                    break;
-                default: return;
+    initializeNavigationHandlers: function(){
+        document.querySelector('#leftnav').addEventListener('click', function(e){
+            var target = e.target, action, url;
+            
+            
+            function findNavAnchor(el){
+                if(!el) return null;
+                if(el.nodeName === 'A') return el;
+                var nav = document.querySelector('#leftnav');
+                while(true){
+                    el = el.parentNode;
+                    if(nav === el) return null;
+                    if(el.nodeName === 'A') return el;
+                    if(el.nodeName === 'BODY') return null;
+                }
             }
-            window.restClientController.runAction(page, action, params);
-        }, false);
+            target = findNavAnchor(target);
+            
+            if(!target || target.nodeName !== 'A') return;
+            action = target.dataset['action'];
+            if(!action) return;
+            switch(action){
+                case 'request': 
+                case 'history':
+                case 'saved':
+                case 'projects':
+                    url = target.getAttribute('href').replace('#',''); 
+                break;
+            }
+            window.appRouter.navigate(url);
+        }, true);
     },
     
-    initializeRouter: function(){
-        this.router = new AppRouter();
-        this.router.initialize();
+    observePageChange: function() {
+        document.querySelector('body').addEventListener("pagechangeevent", function(e) {
+            if (!e.detail)
+                return;
+            var page = e.detail.page, action = null, params = null;
+            if (!page)
+                return;
+            if(e.detail.details){
+                params = e.detail.details;
+            }
+            
+            switch (page) {
+                case 'history':
+                    action = 'default';
+                    if(params && params.action){
+                        action = params.action;
+                        delete params.action;
+                    }
+                    break;
+                case 'request':
+                    action = 'default';
+                    if(params && params.action){
+                        action = params.action;
+                        delete params.action;
+                    }
+                    break;
+                case 'about':
+                    action = 'default';
+                    break;
+                case 'settings':
+                    action = 'default';
+                    break;
+                default:
+                    return;
+            }
+            this.ga_tracker.sendAppView(page + ' page');
+            window.restClientController.runAction(page, action, params);
+        }.bind(this), false);
+    },
+    initializeRouter: function() {
+        var router = new AppRouter();
+        router.initialize();
+        window.appRouter = router;
+    },
+    initializeShortcuts: function(){
+        var data = {
+            'SHORTCUTS': null
+        };
+        chrome.storage.sync.get(data, function(result){
+            if (!result)
+                return;
+            if(!result.SHORTCUTS || result.SHORTCUTS.length === 0) return;
+            for(var i=0,len=result.SHORTCUTS.length;i<len;i++){
+                var sh = result.SHORTCUTS[i];
+                var action = sh.action;
+                var commands = sh.cmd;
+                Mousetrap.bind(commands, this._runShortcutAction.bind(this,action));
+            }
+        }.bind(this));
+    },
+    
+    _runShortcutAction: function(action,e){
+        e.preventDefault();
+        switch(action){
+            case 'SAVE_REQUEST':
+                this.saveRequest();
+                break;
+        }
+    },
+    /**
+     * Determine which kind of request should be saved.
+     * Possibilities:
+     * - New request data - 
+     * - Restored request - overwrite current without dialog
+     * - History request - from history panel - new saved request
+     * - History request - restored and may be altered
+     * @returns {undefined}
+     */
+    saveRequest: function(){
+        var requestController = window.restClientController.getController('request');
+        if(requestController._savedId){
+            //background save for current request
+            this.saveRestoredRequest(requestController._savedId);
+        } else if(requestController.historyId){
+            this.saveRequestHistory(requestController.historyId, true);
+        } else {
+            //new request
+            this.saveCurrentRequest();
+        }
+    },
+    /**
+     * Save current request as a new one.
+     * Don't mind if there is the same request in history or requests storage.
+     * @returns {undefined}
+     */
+    saveCurrentRequest: function(){
+        this.openSaveDialog(function(result){
+            if(!result) return;
+            
+            var requestController = window.restClientController.getController('request');
+            var data = requestController.prepareRequestData();
+            data.project = result.projectName ? result.projectName : null;
+            data.name = result.requestName;
+            data.time = Date.now();
+            if(result.saveOnGoogleDrive){
+                this._saveDriveRequestData(null, data, function(result){
+                    
+                });
+            } else {
+                this._saveLocalRequestData(data, function(result){
+                    
+                    if(!isNaN(result)){
+                        var requestController = window.restClientController.getController('request');
+                        requestController.savedId = result;
+                        window.appRouter.navigate('/index.html?request/saved/'+result);
+                    } else {
+                        //TODO: error
+                    }
+                    
+                });
+            }
+            
+        }.bind(this));
+//        var requestController = window.restClientController.getController('request');
+//        var data = requestController.prepareRequestData();
+//        console.log(data);
+    },
+    
+    saveRestoredRequest: function(saveId){
+        console.log('saveRestoredRequest',saveId);
+    },
+    
+    
+    saveRequestHistory: function(historyId, mayOverride){
+        var context = this;
+        this.openSaveDialog(function(dialogResult){
+            window.restClientStore.getStore(function(store){
+                store.history.get(parseInt(historyId), function(item){
+                    
+                    var requestController = window.restClientController.getController('request');
+                    var data = requestController.prepareRequestData();
+                    data.project = dialogResult.projectName ? dialogResult.projectName : null;
+                    data.name = dialogResult.requestName;
+                    data.responses = item.responses;
+                    data.time = Date.now();
+                    if(dialogResult.saveOnGoogleDrive){
+                        this._saveDriveRequestData(null, data, function(result){
+                            
+                        });
+                    } else {
+                        this._saveLocalRequestData(data, function(result){
+
+                            if(!isNaN(result)){
+                                var requestController = window.restClientController.getController('request');
+                                requestController.savedId = result;
+                                window.appRouter.navigate('/index.html?request/saved/'+result);
+                            } else {
+                                //TODO: error
+                            }
+
+                        });
+                    }
+                    
+                }, function(error){});
+            });
+        });
+    },
+    openSaveDialog: function(callback){
+        if(this.saveDialogDisplayed) return;
+        this.saveDialogCallback = callback;
+        
+        var dialog = jQuery('#saveRequestDialog');
+        dialog.modal();
+        this.saveDialogDisplayed = true;
+        dialog.data('callbackCalled', false);
+        this._attachSaveDialogHandlers(dialog);
+    },
+    
+    _attachSaveDialogHandlers: function(dialog){
+        if(!dialog.data('hasHandlers')){
+            
+            dialog.on('hidden.bs.modal', function(e) {
+                this.saveDialogDisplayed = false;
+                var dialog = jQuery(e.target);
+                if(!dialog.data('callbackCalled')){
+                    this.saveDialogCallback.call(this,null);
+                    dialog.data('callbackCalled', true);
+                }
+            }.bind(this));
+            
+            dialog.on('change', function(e){
+                var action = e.target.dataset['action'];
+                if(!action) return;
+                var target = e.target;
+                switch(action){
+                    case 'dialog-request-save-project-list': 
+                        var value = target.options[target.selectedIndex].value;
+                        var container = jQuery('.project-name', e.currentTarget);
+                        if(value === "add-new"){
+                            container.removeClass('hidden');
+                        } else if (value === "none"){
+                            container.addClass('hidden');
+                        } else {
+                            //number - project ID
+                            container.addClass('hidden');
+                        }
+                    break;
+                }
+            });
+            dialog.on('click', function(e){
+                var action = e.target.dataset['action'];
+                if(!action) return;
+                var name, project, projectName, toDrive = false;
+                var nameInput = jQuery('#dialog-request-name-save', e.currentTarget),
+                    projectInput = jQuery('#dialog-project-name-save', e.currentTarget);
+                switch(action){
+                    case 'dialog-save-request-gdrive': 
+                        toDrive = true;
+                    case 'dialog-save-request': 
+                        var name = nameInput.val();
+                        var project = jQuery('[data-action="dialog-request-save-project-list"]', e.currentTarget).val();
+                        var projectName = projectInput.val();
+                    break;
+                    default: return;
+                }
+                
+                var result = {
+                    'requestName': name,
+                    'addProject': project === "add-new" ? true : false,
+                    'saveOnGoogleDrive': toDrive
+                };
+                
+                var hasError = false;
+                
+                if(name.isEmpty()){
+                    nameInput.parent().addClass('has-error');
+                    hasError = true;
+                } else {
+                    nameInput.parent().removeClass('has-error');
+                }
+                if(result.addProject && projectName.isEmpty()){
+                    projectInput.parent().addClass('has-error');
+                    hasError = true;
+                } else {
+                    projectInput.parent().removeClass('has-error');
+                }
+                if(hasError) return;
+                
+                if(result.addProject){
+                    result.projectName = projectName;
+                } else if(project !== 'none'){
+                    result.projectName = project;
+                }
+                var dialog = jQuery(e.currentTarget);
+                dialog.modal('hide');
+                dialog.data('callbackCalled', true);
+                this.saveDialogCallback.call(this,result);
+            }.bind(this));
+            dialog.data('hasHandlers', true);
+            dialog = null;
+        }
+    },
+    _saveLocalRequestData: function(data, callback){
+        window.restClientStore.getStore(function(store){
+            
+            if(data.requestsId){
+                //override
+            } else {
+                store.requests.put(data, callback, callback);
+            }
+            
+        });
+    },
+    _saveDriveRequestData: function(driveItemId, data, callback){
+        
+        
+        function authCallback(authResult){
+            if(!authResult) {
+                //TODO: error information
+                return;
+            }
+            
+            if(!driveItemId){
+                //open folder picker
+                Drive.getDriveFileId("application/vnd.google-apps.folder", function(folderId){
+                    Drive.insertFile(folderId, data.name, data, function(result){
+                        console.log(result);
+                        //TODO:
+                    });
+                });
+            }
+        }
+        
+        Drive.getAuth(authCallback);
+    },
+    /**
+     * Initialize app handlers. They are responsible to nadle actions like save, open, run request etc.
+     * @returns {undefined}
+     */
+    inistalizeEventHandlers: function(){
+        jQuery('body').on('request.clear', function(e){
+            
+        }.bind(this));
+        jQuery('body').on('request.save', function(e){
+            this.saveRequest();
+        }.bind(this));
+        jQuery('body').on('request.open', function(e){
+            
+        }.bind(this));
     }
 };
 
@@ -950,8 +1240,6 @@ console.log('Welcome to the Rest Client for Google Chrome debug console.');
 console.error('If you see any error message like this, send an issue report at https://github.com/jarrodek/advanced-rest-client/issues. It will help me to make this application even better for you :)');
 console.groupEnd();
 window.restClientStore.initialize();
-window.restClientUrlService = new UrlFieldService();
-window.restClientUrlService.initialize();
 window.restClientHeadersService = new HeadersInputService();
 window.restClientHeadersService.initialize();
 window.restClientPayloadService = new PayloadInputService();
@@ -965,21 +1253,21 @@ window.restClientRequestsStorage = new RequestsStorage(window.restClientStore);
         e.preventDefault();
         var headers_cm = false;
         if (this.dataset['endabled'] === 'true') {
-            window.restClientUI.disbaleHeadersCodeMirror();
+            window.restClientRequestUI.disbaleHeadersCodeMirror();
             this.dataset['endabled'] = 'false';
             this.innerText = 'Run code mirror editor';
         } else {
             enableCodeMirrorForHeaders();
             headers_cm = true;
         }
-        app.localStorage.add({'headers_cm': headers_cm});
+        chrome.storage.sync.set({'headers_cm': headers_cm}, function() {});
     }, false);
 })();
 
 
 function enableCodeMirrorForHeaders() {
     loadCodeMirror(function() {
-        window.restClientUI.enableHeadersCodeMirror();
+        window.restClientRequestUI.enableHeadersCodeMirror();
         var anchor = document.querySelector('#RunCodeMirrorHeadersAction');
         anchor.dataset['endabled'] = 'true';
         anchor.innerText = 'Remove code mirror editor';
@@ -989,11 +1277,15 @@ function enableCodeMirrorForHeaders() {
 
 /*
  * List of app's events:
- * jQuery events (handle with $(element).on();)
+ * jQuery events (handle with jQuery(element).on();)
  * 
  * - headerchange - fired when headers value change
  * - httpmethodchange - HTTP method has changed
  * - payloadchange - HTTP payload change.
+ * - request.begin - fired when the app should fire request. Handler in request controller should fire request.
+ * - request.clear - fired when the app should clear request form.
+ * - request.save - fired when the app should save form.
+ * - request.open - fired when the app should open saved request
  * - request.start - fired when the request is about to start
  * - request.end - firet after current request ends.
  * 

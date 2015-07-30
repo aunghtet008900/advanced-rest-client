@@ -62,73 +62,6 @@ RequestsStorage.prototype = {
             'clb': clb
         };
         this.worker.postMessage({cmd: 'savehistory', 'requestData': requestData, 'id': id});
-        
-//        
-//        requestData = new RequestObject(requestData);
-//        //check if the same request already exists
-//        var context = this;
-//        var keyRange,
-//        options = {};
-//        var options = {};
-//        options.lower = requestData.url;
-//        options.upper = requestData.url;
-//        keyRange = this.appStore.history.makeKeyRange(options);
-//        var result = [];
-//        var onItem = function(item) {
-//            result[result.length] = item;
-//        };
-//        var insert = function(data){
-//            var fileFieldNames = [];
-//            data.files = data.files || [];
-//            data.files.forEach(function(file){
-//                fileFieldNames[fileFieldNames.length] = file.key;
-//            });
-//            
-//            var saveData = {
-//                'url': data.url,
-//                'time': Date.now(),
-//                'hit': 1,
-//                'payload': data.payload,
-//                'files': fileFieldNames,
-//                'headers': data.headers,
-//                'method': data.method
-//            };
-//            context.appStore.history.put(saveData, function(id){
-//                clb.call(window, id);
-//            }, function(error){
-//                clb.call(window, null);
-//            });
-//        };
-//        var onEnd = function() {
-//            if(result.length === 0){
-//                insert(requestData);
-//                return;
-//            }
-//            
-//            for(var i=0, len = result.length; i<len; i++){
-//                var item = result[i];
-//                if(requestData.compare(item)){
-//                    //update
-//                    item.hit++;
-//                    item.time = Date.now();
-//                    context.appStore.history.put(item, function(id){
-//                        clb.call(window, id);
-//                    }, function(error){
-//                        clb.call(window, null);
-//                    });
-//                    return;
-//                }
-//            }
-//            
-//            insert(requestData);
-//        };
-//        this.appStore.history.iterate(onItem, {
-//            index: 'url',
-//            keyRange: keyRange,
-//            filterDuplicates: false,
-//            onEnd: onEnd,
-//            autoContinue: true
-//        });
     },
     
     /**
@@ -145,10 +78,11 @@ RequestsStorage.prototype = {
      *      "response" - String with response
      *      "status" - int response status
      *      "statusText" - String response status text.
+     * @param {Number} responseLoadTime Time in miliseconds
      * @param {type} callback
      * @returns {undefined}
      */
-    saveHistoryResponse: function(historyId, responseData, callback){
+    saveHistoryResponse: function(historyId, responseData, responseLoadTime, callback){
         if(typeof callback !== 'function'){
             callback = function(){};
         }
@@ -159,21 +93,8 @@ RequestsStorage.prototype = {
             'clb': callback
         };
         
-        this.worker.postMessage({cmd: 'savehistoryresponse', id: id, 'historyId': historyId, 'responseData': responseData });
+        responseData.loadTime = responseLoadTime;
         
-//        this.appStore.history.get(historyId, function(data){
-//            if(!data.responses || !data.responses instanceof Array){
-//                data.responses = [];
-//            }
-//            responseData.time = new Date().getTime();
-//            data.responses.push(responseData);
-//            this.appStore.history.put(data, function(id){
-//                callback.call(window, data);
-//            }, function(error){
-//                callback.call(window, error);
-//            });
-//        }.bind(this), function(error){
-//            callback(error);
-//        });
+        this.worker.postMessage({cmd: 'savehistoryresponse', id: id, 'historyId': historyId, 'responseData': responseData});
     }
 };

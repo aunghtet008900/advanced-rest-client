@@ -17,15 +17,13 @@
             - request name/input field to set a name
             - save/open buttons
         -->
-
-
         <nav class="navbar navbar-default navbar-fixed-top" id="topNav" role="navigation">
             <div class="row">
                 <div id="MenuTriggerLogo" class="col-md-2">
                     <span class="app-logo left-menu-trigger">
                         <img src="img/arc_icon_32.png" width="32" height="32" alt="Rest Client" title="Rest Client for Google Chrome &trade;"/>
                     </span>
-                    <button class="btn btn-main-nav left-menu-trigger">Request<span class="glyphicon glyphicon-chevron-right"></span></button>
+                    <button class="btn btn-main-nav left-menu-trigger"><span id="NavControllerName">Request</span><span class="glyphicon glyphicon-chevron-right nav-controller-name-arrow"></span></button>
                 </div>
                 <div class="col-xs-12 col-md-8">
                     <div id="url-panel">
@@ -94,7 +92,7 @@
             </div>
         </div>
         
-        <div class="container page active" id="page-request">
+        <div class="container page active" id="page-request">            
             <div class="row">
                 <div class="col-md-12">
                     <section id="request-panel">
@@ -282,7 +280,7 @@
                                     <div class="tab-pane active" id="rawResponseTab">
                                         <div class="parsed-options-panel">
                                             <div class="btn-group btn-group-xs">
-                                                <button data-action="save-as-file" type="button" class="btn btn-default">Save as file</button>
+                                                <a data-action="save-as-file" type="button" class="btn btn-default">Save as file</a>
                                                 <button data-action="force-json-tab" type="button" class="btn btn-default">Open in JSON tab</button>
                                                 <button data-action="copy-to-clipboard" type="button" class="btn btn-default">Copy to clipboard</button>
                                                 <button data-action="response-in-new-tab" type="button" class="btn btn-default">Open response in new window</button>
@@ -293,7 +291,7 @@
                                     <div class="tab-pane" id="parsedResponseTab">
                                         <div class="parsed-options-panel">
                                             <div class="btn-group btn-group-xs">
-                                                <button data-action="save-as-file" type="button" class="btn btn-default">Save as file</button>
+                                                <a data-action="save-as-file" type="button" class="btn btn-default">Save as file</a>
                                                 <button data-action="force-json-tab" type="button" class="btn btn-default">Open in JSON tab</button>
                                                 <button data-action="copy-to-clipboard" type="button" class="btn btn-default">Copy to clipboard</button>
                                                 <button data-action="response-in-new-tab" type="button" class="btn btn-default">Open response in new window</button>
@@ -322,13 +320,59 @@
             </div>
         </div>
         <div class="container page hidden" id="page-history">
+            <!-- search bar -->
             <div class="row">
                 <div class="col-md-12">
-                    <h1>Requests history</h1>
-                    
-                    
+                    <div class="input-group">
+                        <input id="HistorySearch" list="HistorySearchOptions" type="search" class="form-control" placeholder="search for url or name">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button">Search</button>
+                        </span>
+                        <datalist id="HistorySearchOptions">
+                            <option value="GET"></option>
+                            <option value="POST"></option>
+                            <option value="PUT"></option>
+                            <option value="PATCH"></option>
+                            <option value="DELETE"></option>
+                            <option value="HEAD"></option>
+                            <option value="OPTIONS"></option>
+                        </datalist>
+                    </div>
                 </div>
             </div>
+            <style id="HistorySearchStyle"></style>
+            <section id="HistoryResults">
+                
+            </section>
+        </div>
+        
+        
+        <div class="container page hidden" id="page-settings">
+            
+            <section>
+                <h4>Privacy</h4>
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" id="GA_enable_setting"> Send anonymous usage data. (Read provacy statement and more about analytics in <a href="#/index.html?about">About page</a>).
+                    </label>
+                </div>
+            </section>
+            
+        </div>
+        
+        
+        <div class="container page hidden" id="page-about">
+            <p class="lead">Thank you for choosing Rest Client for Google Chrome!</p>
+            <div class="alert alert-info"><strong>Privacy!</strong> This application is using Google Analitycs. You can disable it in settings. Read more what kind of data this app is collecting and for what.</div>
+            
+            
+            <section>
+                <h4>Privacy</h4>
+                <p>This application is using Google Analytics to analyse application usage.</p>
+                <p>Thanks to analysis the app maker (me) can give you better product. It is measuring which functions you are using the most, how you are using it, which functions you are not using (so it can be changed/removed) and so on.</p>
+                <div class="alert alert-success">Be sure that this application <strong>do not collecting any data related to REST services that you are testing</strong>! All those data are saved in local storage of your browser and they never leave it's sandbox.</div>
+                <p>None of your private data is send to Google. Google Analytics policy prohibits upload of any data that allows Google to personally identify an individual. This app is respecting this policy. <a href='https://developers.google.com/analytics/devguides/collection/protocol/policy' target="_blank">Read more about policy</a></p>
+            </section>
         </div>
         <!-- 
             HTML templates.
@@ -391,7 +435,37 @@
             <div class="redirectHeaders"></div>
         </div>
     </template>
-
+    <template id="drive-file-item-template">
+        <div class="Folder_Pickup_ResultRow row" data-id="">
+            <div class="Folder_Pickup_Icon col-md-1 hidden-sm hidden-xs" data-id="">
+                <img class="file-icon" src="">
+            </div>
+            <div class="Folder_Pickup_Name col-md-9 col-xs-9 col-sm-10" data-id=""></div>
+            <div class="Folder_Pickup_Time col-md-2 col-xs-3 col-sm-2" data-id=""></div>
+        </div>
+    </template>
+    <template id="saved-list-item-template">
+        <div class="row item-row searchable" data-index="" data-id="">
+            <div class="col-lg-1"><span class="item-date"><span class="day"></span><span class="month"></span></span></div>
+            <div class="col-lg-1 history-item-method-column"><span class="item-method"></span></div>
+            <div class="col-lg-8"><span class="item-url"></span></div>
+            <div class="col-lg-2 history-item-action-column">
+                <div class="btn-group">
+                    <button type="button" data-action="use" data-id="" class="btn btn-info">Use</button>
+                    <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown">
+                        <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu">
+                        <li><a href="about:blank" data-action="delete" data-id="">Delete</a></li>
+                        <li><a href="about:blank" data-action="save" data-id="">Save</a></li>
+                        <li class="divider"></li>
+                        <li><a href="about:blank" data-action="listresponses" data-id="">Show responses (<span class="responses-counter">0</span>)</a></li>
+                        <li><a href="about:blank" data-action="compareresponsesresponses" data-id="">Compare responses</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </template>
     <!-- Dialogs -->
 
     <div id="addMethodDialod" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="addMethodDialodLabel" aria-hidden="true">
@@ -407,29 +481,97 @@
                 <div class="modal-footer">
                     <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
                     <button class="btn btn-default btn-primary" id="dialog-save-http-method">Save</button>
-
                 </div>
             </div>
         </div>
     </div>
+    
+    <div id="saveRequestDialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="saveRequestDialogLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <h3 id="saveRequestDialogLabel">Save request data</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <input class="form-control" id="dialog-request-name-save" type="text" placeholder="enter request name here">
+                    </div>
+                    <div class="form-group">
+                        Add to group: 
+                        <select data-action="dialog-request-save-project-list">
+                            <option value="none">None</option>
+                            <option value="add-new">New group</option>
+                        </select>
+                    </div>
+                    <div class="form-group project-name hidden">
+                        <input class="form-control" id="dialog-project-name-save" type="text" placeholder="enter group name here">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
+                    <button class="btn btn-default" data-action="dialog-save-request-gdrive">Save to Google Drive™</button>
+                    <button class="btn btn-default btn-primary" data-action="dialog-save-request">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="driveFilePickerDialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="driveFilePickerDialogLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <h3 id="driveFilePickerDialogLabel">Select from Google Drive&TRADE;</h3>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group">
+                        <input type="search" class="form-control" id="driveSearchInput">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="button" id="driveSearchButton">
+                                <span class="glyphicon glyphicon-search"></span>
+                            </button>
+                        </span>
+                    </div>
+                    <div id="driveFileListLoading" class="hidden">
+                        <div class="progress progress-striped active">
+                            <div class="progress-bar"  role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+                                <span class="sr-only">loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <section id="file-picker-list" class="container"></section>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
+                    <button class="btn btn-default btn-primary" data-action="dialog-pick-file">Open</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/drive.js"></script>
     <script src="js/plugins.js"></script>
+    <script src="js/date.format.js"></script>
+    <script src="js/CacheParser.js"></script>
+    <script src="js/mousetrap.min.js"></script>
     <script src="js/idbstore.min.js"></script>
     <script src="js/jquery.1.10.1.js"></script>
     <script src="js/bootstrap-3.0.0/bootstrap.min.js"></script>
     <!--<script src="js/typeahead.js"></script>-->
     <script type="text/javascript" src="js/speach.js"></script>
-    
-    <!-- Router -->
-    <script src="js/history.js/jquery.history.js"></script>
+    <script src="js/google-analytics-bundle.js"></script>
+    <script type="text/javascript" src="js/gzip/zlib_and_gzip.min.js"></script>
+    <script type="text/javascript" src="js/HttpRequest/HTTPrequest.js"></script>
     <script src="js/Router.js"></script>
     <script src="js/approuting.js"></script>
 
-    <script src="js/declarativeWebRequest.js"></script>
+    
     <script src="js/apphelper.js"></script>
     <script src="js/requestsStorage.js"></script>
     <script src="js/uri/Uri.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/controllers.js"></script>
     <script src="js/logic.js"></script>
+    
 </body>
 </html>

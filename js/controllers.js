@@ -17,7 +17,9 @@ AppController.prototype = {
     }
 };
 
-function RequestController() {}
+function RequestController() {
+    this.urlService = null;
+}
 RequestController.prototype = Object.create(AppController.prototype);
 Object.defineProperty(RequestController.prototype, "historyId", {
     get: function() {
@@ -26,16 +28,34 @@ Object.defineProperty(RequestController.prototype, "historyId", {
     set: function(id) {
         this._historyId = id;
         if (this.currentResponse !== null) {
-            window.restClientRequestsStorage.saveHistoryResponse(id, this.currentResponse);
+            //as soon as we have response ready save it to history DB
+            window.restClientRequestsStorage.saveHistoryResponse(id, this.currentResponse, this.responseLoadTime);
         }
     }
 });
+Object.defineProperty(RequestController.prototype, "savedId", {
+    get: function() {
+        return this._savedId;
+    },
+    set: function(id) {
+        this._savedId = id;
+    }
+});
 RequestController.prototype.initialize = function() {
+    if(this.initialized) return;
+    this.initialized = true;
+    this.urlService = new UrlFieldService();
+    this.urlService.initialize();
+    
     this.reset();
     this.observeFormActions();
     this.observeResponsePanelActions();
     this.observePageUnload();
     this.restoreLatestState();
+    
+    jQuery('body').on('request.begin', function(e){
+        this.startRequest();
+    }.bind(this));
 };
 RequestController.prototype.reset = function() {
     this.requestStart = 0;
@@ -51,6 +71,8 @@ RequestController.prototype.reset = function() {
     this.responseURL = null;
     this.currentResponse = null;
     this._historyId = null;
+    this._savedId = null;
+    this.responseLoadTime = 0;
 };
 RequestController.prototype.show = function(action, params) {
     
@@ -58,13 +80,41 @@ RequestController.prototype.show = function(action, params) {
         case 'default':
             
         break;
+        case 'history': 
+            this.fromHistory(params.id);
+        break;
+        case 'saved':
+            if(this.savedId === params.id) return;
+            this.fromSaved(params.id);
+        break;
         default: return;
     }
     
-    console.log('show request controller', action, params);
+//    console.log('show request controller', action, params);
 };
+
+
+RequestController.prototype.fromHistory = function(id){
+    var context = this;
+    this.historyId = parseInt(id);
+    window.restClientStore.getStore(function(store){
+        store.history.get(parseInt(id), function(item){
+            context.restoreFromObject(item);
+        }, function(error){});
+    });
+    
+}
+RequestController.prototype.fromSaved = function(id){
+    var context = this;
+    this.savedId = parseInt(id);
+    window.restClientStore.getStore(function(store){
+        store.requests.get(parseInt(id), function(item){
+            context.restoreFromObject(item);
+        }, function(error){});
+    });
+}
 RequestController.prototype.onBeforeShow = function() {
-    window.restClientUI.showPage('request');
+    window.restClientRequestUI.showPage('request');
 };
 RequestController.prototype.observeFormActions = function() {
     var context = this;
@@ -79,19 +129,19 @@ RequestController.prototype.observeFormActions = function() {
         }, false);
     });
 
-    $('body').on('request.start', function() {
-        $('.request-loader').removeClass('hidden');
+    jQuery('body').on('request.start', function() {
+        jQuery('.request-loader').removeClass('hidden');
     });
-    $('body').on('request.end', function() {
-        $('.request-loader').addClass('hidden');
+    jQuery('body').on('request.end', function() {
+        jQuery('.request-loader').addClass('hidden');
     });
-    $('#response-panel a[data-toggle="tab"]').on('show.bs.tab', function(e) {
+    jQuery('#response-panel a[data-toggle="tab"]').on('show.bs.tab', function(e) {
         //remove all poprovers from hidden tab
         var oldTab = e.relatedTarget;
         if (oldTab.hash === '#xmlResponseTab') {
-            $('#XmlHtmlPanel *[data-image]').popover('hide');
+            jQuery('#XmlHtmlPanel *[data-image]').popover('hide');
         } else if (oldTab.hash === '#jsonResponseTab') {
-            $('#JsonHtmlPanel *[data-image]').popover('hide');
+            jQuery('#JsonHtmlPanel *[data-image]').popover('hide');
         }
     });
 };
@@ -109,23 +159,7 @@ RequestController.prototype.restoreLatestState = function() {
             restored = JSON.parse(result.latestrequest);
         } catch (e) {
         }
-        if (restored) {
-            if (restored.url) {
-                window.restClientUrlService.value = restored.url;
-            }
-            if (restored.method) {
-                $('#HttpMethod' + restored.method).click();
-            }
-            if (restored.headers) {
-                window.restClientHeadersService.value = restored.headers;
-            }
-            if (restored.payload) {
-                window.restClientPayloadService.value = restored.payload;
-            }
-            if (restored.fileFieldNames && restored.fileFieldNames.length > 0) {
-                window.restClientPayloadService.filenames = restored.fileFieldNames;
-            }
-        }
+        this.restoreFromObject(restored);
         if (result.headers_cm) {
             //enable code mirror for headers RAW input
             enableCodeMirrorForHeaders();
@@ -135,10 +169,47 @@ RequestController.prototype.restoreLatestState = function() {
         }
     }.bind(this));
 };
+
+RequestController.prototype.restoreFromObject = function(object) {
+    if (object) {
+        if (object.url) {
+            this.urlService.value = object.url;
+        }
+        if (object.method) {
+            jQuery('#HttpMethod' + object.method).click();
+        } else {
+            jQuery('#HttpMethodGET').click();
+        }
+        if (object.headers) {
+            if(object.headers instanceof Array){
+                object.headers = HttpHeadersParser.toString(object.headers);
+            }
+            window.restClientHeadersService.value = object.headers;
+        } else {
+            window.restClientHeadersService.value = '';
+        }
+        if (object.payload) {
+            window.restClientPayloadService.value = object.payload;
+        } else {
+            window.restClientPayloadService.value = '';
+        }
+        if (object.fileFieldNames && object.fileFieldNames.length > 0) {
+            window.restClientPayloadService.filenames = object.fileFieldNames;
+        } else {
+            window.restClientPayloadService.filenames = [];
+        }
+    }
+}
+
+
+/**
+ * @TODO
+ * @returns {undefined}
+ */
 RequestController.prototype.observePageUnload = function() {
-    window.addEventListener("beforeunload", function() {
+    chrome.runtime.onSuspend.addListener(function() { 
         this.saveState();
-    }.bind(this), false);
+    }.bind(this));
 };
 RequestController.prototype.saveState = function() {
     var latestrequest = {};
@@ -150,8 +221,8 @@ RequestController.prototype.saveState = function() {
     });
     latestrequest.fileFieldNames = fileFieldNames;
     latestrequest.headers = window.restClientHeadersService.value;
-    latestrequest.url = window.restClientUrlService.value;
-    latestrequest.method = window.restClientUrlService.getMethod();
+    latestrequest.url = this.urlService.value;
+    latestrequest.method = this.urlService.getMethod();
     app.localStorage.add({'latestrequest': JSON.stringify(latestrequest)});
 };
 RequestController.prototype.prepareRequestData = function() {
@@ -159,8 +230,8 @@ RequestController.prototype.prepareRequestData = function() {
         payload: window.restClientPayloadService.value,
         files: window.restClientPayloadService.files,
         headers: HttpHeadersParser.fromString(window.restClientHeadersService.value),
-        url: window.restClientUrlService.value,
-        method: window.restClientUrlService.getMethod()
+        url: this.urlService.value,
+        method: this.urlService.getMethod()
     };
     return request;
 };
@@ -197,7 +268,7 @@ RequestController.prototype._runRequestObject = function(requestData) {
     req.addEventListener('error', this._requestLoadError.bind(this), false);
 
     try {
-        $('body').trigger('request.start');
+        jQuery('body').trigger('request.start');
         this.requestStart = performance.now();
         if (requestData.payload) {
             req.send(requestData.payload);
@@ -231,25 +302,25 @@ RequestController.prototype._requestLoadError = function(e) {
 };
 RequestController.prototype._completeRequest = function(transport, collectedData, isError) {
     window.restClientWebRequest.reset();
-    $('body').trigger('request.end');
+    jQuery('body').trigger('request.end');
     console.log('_completeRequest', 'transport', transport, 'data', collectedData, 'error', isError);
     logGroupEnd();
 
     this.responseURL = collectedData.FINAL_URL;
-    window.restClientUI.resetResponseView();
-
+    window.restClientRequestUI.resetResponseView();
+    //STATUS PANEL
+    var requestTime = Math.round(this.requestEnd - this.requestStart);
+    
+    
     this.currentResponse = collectedData;
     this.currentResponse.response = transport.response;
     this.currentResponse.status = transport.status;
     this.currentResponse.statusText = transport.statusText;
+    this.responseLoadTime = requestTime;
 
     if (this._historyId !== null) {
-        window.restClientRequestsStorage.saveHistoryResponse(this._historyId, this.currentResponse);
+        window.restClientRequestsStorage.saveHistoryResponse(this._historyId, this.currentResponse, this.responseLoadTime);
     }
-
-
-    //STATUS PANEL
-    var requestTime = Math.round(this.requestEnd - this.requestStart);
 
     var headStatusValue = document.querySelector('#headStatusValue');
     var headLoadingTime = document.querySelector('#headLoadingTime');
@@ -258,11 +329,11 @@ RequestController.prototype._completeRequest = function(transport, collectedData
     var responseStatusLoadingTime = document.querySelector('#responseStatusLoadingTime');
 
     if (transport.status === 0 || transport.status >= 500) {
-        window.restClientUI.setResponseStatusState("error");
+        window.restClientRequestUI.setResponseStatusState("error");
     } else if (transport.status >= 400) {
-        window.restClientUI.setResponseStatusState("warning");
+        window.restClientRequestUI.setResponseStatusState("warning");
     } else {
-        window.restClientUI.setResponseStatusState("ok");
+        window.restClientRequestUI.setResponseStatusState("ok");
     }
 
     var statusTxt = "";
@@ -289,11 +360,11 @@ RequestController.prototype._completeRequest = function(transport, collectedData
     var rawResponseCode = document.querySelector('#rawResponseCode');
 
     if (!this.currentResponse.response || this.currentResponse.response.trim().isEmpty()) {
-        $('#rawResponseTab .parsed-options-panel:visible').hide();
+        jQuery('#rawResponseTab .parsed-options-panel:visible').hide();
         rawResponseCode.innerHTML = '<i class="response-no-data">Response does not contain any data</i>';
         return;
     } else {
-        $('#rawResponseTab .parsed-options-panel:hidden').show();
+        jQuery('#rawResponseTab .parsed-options-panel:hidden').show();
     }
 
     rawResponseCode.innerText = this.currentResponse.response;
@@ -316,25 +387,29 @@ RequestController.prototype._completeRequest = function(transport, collectedData
                     this.responseContentType = "text/javascript";
                 }
                 document.querySelector('a[href="#parsedResponseTab"]').classList.remove('hidden');
-                $('a[href="#parsedResponseTab"]').tab('show');
+                jQuery('a[href="#parsedResponseTab"]').tab('show');
                 loadCodeMirror(function() {
                     this._responseCodeMirror(transport.response, this.responseContentType);
                 }.bind(this));
 
             } else {
                 //is JSON
-                document.querySelector('#JsonHtmlPanel').innerHTML = '';
-                document.querySelector('a[href="#jsonResponseTab"]').classList.remove('hidden');
-                $('a[href="#jsonResponseTab"]').tab('show');
-                this._setJSONtab(transport.response);
+                this._responseInJSON();
             }
         }.bind(this));
     } else {
         document.querySelector('a[href="#xmlResponseTab"]').classList.remove('hidden');
-        $('a[href="#xmlResponseTab"]').tab('show');
+        jQuery('a[href="#xmlResponseTab"]').tab('show');
         this._setXmlTab(xmlData);
     }
 };
+RequestController.prototype._responseInJSON = function() {
+    document.querySelector('#JsonHtmlPanel').innerHTML = '';
+    document.querySelector('a[href="#jsonResponseTab"]').classList.remove('hidden');
+    jQuery('a[href="#jsonResponseTab"]').tab('show');
+    this._setJSONtab(this.currentResponse.response);
+}
+
 /**
 * It the response if not either JSON or XML present it in "parsed" panel.
 * It will use CodeMirror to parse data.
@@ -550,7 +625,7 @@ RequestController.prototype._addXMLcontainerControls = function() {
             }
             e.preventDefault();
             var url = e.target.getAttribute('href');
-            window.restClientUrlService.value = url;
+            this.urlService.value = url;
             return;
         }
 
@@ -563,22 +638,22 @@ RequestController.prototype._addXMLcontainerControls = function() {
         } else {
             parent.dataset['expanded'] = "true";
         }
-    });
+    }.bind(this));
 
-    $('#XmlHtmlPanel').on('show.bs.popover', function(e) {
+    jQuery('#XmlHtmlPanel').on('show.bs.popover', function(e) {
         var src = e.target.dataset['image'];
         if (!src)
             return;
         this._loadPopoverImage(src);
     }.bind(this));
-    $('#XmlHtmlPanel').on('hide.bs.popover', function(e) {
+    jQuery('#XmlHtmlPanel').on('hide.bs.popover', function(e) {
         var src = e.target.dataset['image'];
         if (!src)
             return;
         var container = document.querySelector('[data-imgprevurl="' + src + '"]');
         if (!container)
             return;
-        var blobUrl = $('a > img', container).attr('src');
+        var blobUrl = jQuery('a > img', container).attr('src');
         if (blobUrl) {
             window.webkitURL.revokeObjectURL(blobUrl);
         }
@@ -589,13 +664,14 @@ RequestController.prototype._addJSONcontainerControls = function() {
         return;
     }
     this.JSON_Controls_Added = true;
+    var context = this;
     document.querySelector('#JsonHtmlPanel').addEventListener('click', function(e) {
         if (!e.target)
             return;
         if (e.target.nodeName === "A") {
             e.preventDefault();
             var url = e.target.getAttribute('href');
-            window.restClientUrlService.value = url;
+            context.urlService.value = url;
             return;
         }
         var toggleId = e.target.dataset['toggle'];
@@ -612,20 +688,20 @@ RequestController.prototype._addJSONcontainerControls = function() {
         }
     });
 
-    $('#JsonHtmlPanel').on('show.bs.popover', function(e) {
+    jQuery('#JsonHtmlPanel').on('show.bs.popover', function(e) {
         var src = e.target.dataset['image'];
         if (!src)
             return;
         this._loadPopoverImage(src);
     }.bind(this));
-    $('#JsonHtmlPanel').on('hide.bs.popover', function(e) {
+    jQuery('#JsonHtmlPanel').on('hide.bs.popover', function(e) {
         var src = e.target.dataset['image'];
         if (!src)
             return;
         var container = document.querySelector('[data-imgprevurl="' + src + '"]');
         if (!container)
             return;
-        var blobUrl = $('a > img', container).attr('src');
+        var blobUrl = jQuery('a > img', container).attr('src');
         if (blobUrl) {
             window.webkitURL.revokeObjectURL(blobUrl);
         }
@@ -642,37 +718,37 @@ RequestController.prototype._addParsedHTMLcontainerControls = function() {
         if (e.target.nodeName === "A") {
             e.preventDefault();
             var url = e.target.getAttribute('href');
-            window.restClientUrlService.value = url;
+            this.urlService.value = url;
             return;
         }
-    });
+    }.bind(this));
 
-    $('#CMHtmlPanel').on('show.bs.popover', function(e) {
+    jQuery('#CMHtmlPanel').on('show.bs.popover', function(e) {
         var src = e.target.dataset['image'];
         if (!src)
             return;
         this._loadPopoverImage(src);
     }.bind(this));
-    $('#CMHtmlPanel').on('hide.bs.popover', function(e) {
+    jQuery('#CMHtmlPanel').on('hide.bs.popover', function(e) {
         var src = e.target.dataset['image'];
         if (!src)
             return;
         var container = document.querySelector('[data-imgprevurl="' + src + '"]');
         if (!container)
             return;
-        var blobUrl = $('a > img', container).attr('src');
+        var blobUrl = jQuery('a > img', container).attr('src');
         if (blobUrl) {
             window.webkitURL.revokeObjectURL(blobUrl);
         }
     }.bind(this));
 };
 RequestController.prototype._initializePopovers = function(panel) {
-    var popovers = $('*[data-image]', panel);
+    var popovers = jQuery('*[data-image]', panel);
     popovers.each(function(i, abbr) {
         var content = '<div data-imgprevurl="' + abbr.dataset['image'] + '" class="popover-image-prev">';
         content += '<img src="img/mini-loader.gif" alt="loading" title="loading"/><br/><i>loading</i>';
         content += '</div>';
-        $(abbr).attr({
+        jQuery(abbr).attr({
             'data-html': true,
             'data-placement': 'auto top',
             'data-trigger': 'hover',
@@ -763,14 +839,40 @@ RequestController.prototype.observeResponsePanelActions = function() {
                 var button = e.target;
                 var download = button.getAttribute("download");
                 if (download) {
-
+                    if(button.getAttribute("disabled")){
+                        return;
+                    }
+                    button.setAttribute("disabled", "true");
+                    window.setTimeout(function(button){
+                        button.href= "about:blank";
+                        button.innerText = "Save as file";
+                        var url = button.dataset['objecturl'];
+                        button.removeAttribute("download");
+                        button.removeAttribute("data-downloadurl");
+                        button.removeAttribute("disabled");
+                        button.removeAttribute("data-objecturl");
+                        this.revokeDownloadData(url);
+                    }.bind(this, button),1500);
                 } else {
                     e.preventDefault();
-
+                    var body = this.currentResponse.response;
+                    var enc = this.responseContentType || 'text/html';
+                    var ext = guessFileExtension(enc);
+                    
+                    this.createDownloadData(body, enc, function(url){
+                        button.href = url;
+                        var now = new Date();
+                        var date = now.format("yyyy-mm-dd_HH-MM-ss");
+                        var fileName = "arc-response-"+date+"."+ext;
+                        button.setAttribute("download", fileName);
+                        button.dataset['downloadurl'] = enc+":"+fileName+":"+url;
+                        button.dataset['downloadurl'] = url;
+                        button.innerText = "Download";
+                    });
                 }
                 break;
             case 'force-json-tab':
-
+                this._responseInJSON();
                 break;
             case 'copy-to-clipboard':
                 copyText(this.currentResponse.response);
@@ -782,8 +884,6 @@ RequestController.prototype.observeResponsePanelActions = function() {
             default:
                 return;
         }
-
-
     }.bind(this), false);
     document.querySelector('#response-panel').addEventListener('click', function(e) {
         var action = e.target.dataset['action'];
@@ -794,9 +894,9 @@ RequestController.prototype.observeResponsePanelActions = function() {
             case 'hide-request-headers':
             case 'hide-response-headers':
                 if (e.target.dataset['state'] === 'closed') {
-                    window.restClientUI.setResponseHeadersPanelState(action === 'hide-response-headers' ? 'response' : 'request', 'opened');
+                    window.restClientRequestUI.setResponseHeadersPanelState(action === 'hide-response-headers' ? 'response' : 'request', 'opened');
                 } else {
-                    window.restClientUI.setResponseHeadersPanelState(action === 'hide-response-headers' ? 'response' : 'request', 'closed');
+                    window.restClientRequestUI.setResponseHeadersPanelState(action === 'hide-response-headers' ? 'response' : 'request', 'closed');
                 }
                 break;
             default:
@@ -804,32 +904,155 @@ RequestController.prototype.observeResponsePanelActions = function() {
         }
     }.bind(this), false);
 };
-
+RequestController.prototype.createDownloadData = function(data, encoding, callback){
+    var worker = new Worker(chrome.runtime.getURL('js/workers/file_manipulation.js'));
+    worker.addEventListener('message', function(e) {
+        callback(e.data.url);
+    }, false);
+    worker.postMessage({
+        'body': data,
+        'encoding': encoding,
+        'cmd': 'createfileurl'
+    });
+}
+RequestController.prototype.revokeDownloadData = function(url){
+    var URL = window.webkitURL || window.URL;
+    URL.revokeObjectURL(url);
+}
 
 
 function HistoryController() {
+    this.ui = null;
 }
 HistoryController.prototype = Object.create(AppController.prototype);
+HistoryController.prototype.initialize = function(){
+    // /index.html?request/history/:id
+    if(this.initialized) return;
+    this.initialized = true;
+    
+    this.ui = new RestClientHistoryUI();
+    this.ui.initialize();
+    this._observeActionContainer();
+}
 HistoryController.prototype.onBeforeShow = function() {
-    window.restClientUI.showPage('history');
+    window.restClientRequestUI.showPage('history');
 };
+HistoryController.prototype.show = function(action, params) {
+    switch(action){
+        case 'default':
+            this._showDefault();
+            break;
+        case 'listresponses':
+            this.listResponses(params.id);
+            break;
+    }
+}
+HistoryController.prototype.onHide = function() {
+    document.querySelector('#HistoryResults').innerHTML = '';
+}
+HistoryController.prototype._showDefault = function() {
+    
+    var context = this;
+    var elements = [];
+    function onItem(item, cursor, tx){
+        elements[elements.length] = item;
+    }
+    function onEnd(){
+        if(elements.length === 0) return;
+        
+        elements.sort(function(a, b){
+            if(a.time === b.time){
+                if(a.hit === b.hit) return 0;
+                return a.hit < b.hit ? 1 : -1;
+            }
+            return a.time < b.time ? 1 : -1;
+        });
+        for(var i=0,len=elements.length; i<len; i++){
+            context.ui.addListItem(elements[i]);
+        }
+    }
+    var opt = {
+        'index': 'time',
+        'order': 'DESC',
+        'autoContinue': true,
+        'onEnd': onEnd
+    };
+    
+    window.restClientStore.getStore(function(store){
+        store.history.iterate(onItem, opt);
+    });
+}
+HistoryController.prototype._observeActionContainer = function() {
+    document.querySelector('#HistoryResults').addEventListener('click', function(e){
+        var action = e.target.dataset['action'];
+        if(!action) return;
+        e.preventDefault();
+        var id = e.target.dataset['id'];
+        if(!id) return;
+        switch(action){
+            case 'use': 
+                window.appRouter.navigate('/index.html?request/history/'+id);
+                break;
+            case 'delete': break;
+            case 'save': 
+                
+                break;
+            case 'compareresponsesresponses': break;
+            case 'listresponses': 
+                window.appRouter.navigate('/index.html?history/listresponses/'+id);
+                break;
+        }
+    }, false);
+}
+HistoryController.prototype.listResponses = function(id) {
+    document.querySelector('#HistoryResults').innerHTML = '';
+    
+    id = parseInt(id);
+    var context = this;
+    function onItem(item){
+        if(!item){
+            //TODO
+            return;
+        }
+        context.ui.addListItem(item);
+        
+        
+    }
+    function onError(error){
+        //TODO
+    }
+    
+    window.restClientStore.getStore(function(store){
+        store.history.get(id,onItem,onError);
+    });
+}
+
+
+
+
 function SettingsController() {
 }
 SettingsController.prototype = Object.create(AppController.prototype);
 SettingsController.prototype.onBeforeShow = function(){
-    window.restClientUI.showPage('settings');
+    window.restClientRequestUI.showPage('settings');
 };
-
+function AboutController() {
+}
+AboutController.prototype = Object.create(AppController.prototype);
+AboutController.prototype.onBeforeShow = function(){
+    window.restClientRequestUI.showPage('about');
+};
 
 
 (function(window) {
 
     var current = null;
     var controllers = [];
-    var controllers_names = ['request','history','settings'];
+    var controllers_names = ['request','history','settings','about'];
     controllers['request'] = new RequestController();
     controllers['history'] = new HistoryController();
     controllers['settings'] = new SettingsController();
+    controllers['about'] = new AboutController();
 
     function initializeControlers() {
         
@@ -846,15 +1069,24 @@ SettingsController.prototype.onBeforeShow = function(){
         if (current === obj) {
             obj.show(action, params);
         } else {
+            if(current != null)
+                current.onHide();
             current = obj;
             obj.onBeforeShow();
             obj.show(action, params);
             obj.onShow();
         }
     }
-
+    
+    function getController(name){
+        if(name in controllers)
+            return controllers[name];
+        return null;
+    }
+    
     window.restClientController = {
         initilize: initializeControlers,
-        runAction: runControllerAction
+        runAction: runControllerAction,
+        getController: getController
     };
 })(this);

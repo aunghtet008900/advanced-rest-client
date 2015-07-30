@@ -8,15 +8,23 @@
             var commands = {
                 'start request': function() {
                     console.log('Voice command: start request');
+                    jQuery('body').trigger('request.begin');
                 },
                 'clear': function() {
                     console.log('Voice command: clear');
+                    jQuery('body').trigger('request.clear');
                 },
                 'save': function() {
                     console.log('Voice command: save');
+                    jQuery('body').trigger('request.save');
                 },
                 'open': function() {
                     console.log('Voice command: open');
+                    jQuery('body').trigger('request.open');
+                },
+                'open :requestName': function(requestName) {
+                    console.log('Voice command: open + requestName: ', requestName);
+                    jQuery('body').trigger('request.open');
                 },
                 'show :page': function(page) {
                     console.log('Voice command: show page - ' + page);

@@ -1,5 +1,8 @@
-
 /*
+ * 
+ * CHANGED COPY FOR CHROME APPS
+ * 
+ * 
  Copyright (C) <2012> <haithem bel haj>
  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
@@ -17,11 +20,7 @@
         Router.prototype.trigger = true;
 
         function Router(routes) {
-            var _this = this;
-            this.routes = routes != null ? routes : {};
-            History.Adapter.bind(window, 'statechange', function() {
-                return _this.checkRoutes(History.getState());
-            });
+            this.routes = routes || {};
         }
 
         Router.prototype.route = function(route, callback) {
@@ -45,39 +44,16 @@
         };
 
         Router.prototype.navigate = function(url, trigger, replace, name) {
-            if (trigger == null)
-                trigger = true;
-            if (replace == null)
-                replace = false;
-            if (name == null)
-                name = null;
-            this.trigger = trigger;
-            if (replace) {
-                return History.replaceState({
-                    'url': url
-                }, null, url);
-            } else {
-                return History.pushState({
-                    'url': url
-                }, null, url);
-            }
+            this.checkRoutes({data: {url: url}});
         };
 
         Router.prototype.start = function(url) {
             var stateObj = {};
-            if (url != null)
+            if (url !== null)
                 stateObj = {data: {url: url}};
             else
-                stateObj = History.getState();
+                stateObj = {data: {url: window.location.pathname+window.location.hash}};
             return this.checkRoutes(stateObj);
-        };
-
-        Router.prototype.go = function(num) {
-            return History.go(num);
-        };
-
-        Router.prototype.back = function() {
-            return History.back();
         };
 
         return Router;

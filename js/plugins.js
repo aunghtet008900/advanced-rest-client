@@ -480,8 +480,8 @@ var HttpPayloadParser = {
                 continue;
             }
             try {
-                var name = decode ? URL.decodeQueryString(_tmp[0].trim()) : _tmp[0].trim();
-                var value = decode ? URL.decodeQueryString(_tmp[1].trim()) : _tmp[1].trim();
+                var name = decode ? ARC_URL.decodeQueryString(_tmp[0].trim()) : _tmp[0].trim();
+                var value = decode ? ARC_URL.decodeQueryString(_tmp[1].trim()) : _tmp[1].trim();
                 var data = {
                     'key': name,
                     'value': value
@@ -525,12 +525,12 @@ var HttpPayloadParser = {
 
             if (!(key.isEmpty() && value.isEmpty())) {
                 if (encode)
-                    result += URL.encodeQueryString(key);
+                    result += ARC_URL.encodeQueryString(key);
                 else
                     result += key;
                 result += "=";
                 if (encode)
-                    result += URL.encodeQueryString(value);
+                    result += ARC_URL.encodeQueryString(value);
                 else
                     result += value;
             }
@@ -539,7 +539,7 @@ var HttpPayloadParser = {
     }
 };
 
-var URL = {
+var ARC_URL = {
     /**
      * Returns a string where all URL component escape sequences have been
      * converted back to their original character representations.

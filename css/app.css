@@ -602,6 +602,80 @@ h1.nav-h1{
     font-weight: bold;
     width: 100%;
 }
+.nav-controller-name-arrow{
+    font-size: 11px;
+    font-weight: normal;
+    margin-left: 2px;
+}
+
+
+
+
+
+#HistoryResults .item-url {
+    display: block;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+#HistoryResults .item-date {
+    color: #A0A0A0;
+    display: block;
+}
+
+#HistoryResults .day {
+    font-size: 25px;
+    display: block;
+    text-align: center;
+    font-weight: normal;
+}
+
+#HistoryResults .month {
+    display: block;
+    text-align: center;
+}
+#HistoryResults .item-row {
+    margin-top: 3px;
+    margin-bottom: 3px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    border-bottom: 1px #e5e5e5 solid;
+    
+    display: -webkit-flex;
+    display: flex;
+    -webkit-box-align: center;
+    box-align: center;
+    -webkit-align-items: center;
+    align-items: center;
+}
+.history-item-method-column,
+.history-item-action-column{
+    display: -webkit-flex;
+    display: flex;
+    -webkit-justify-content: center;
+    justify-content: center;
+}
+.Folder_Pickup_ResultRow {
+    border-bottom: 1px #E5E5E5 solid;
+    border-left: 1px transparent solid;
+    border-right: 1px transparent solid;
+    border-top: 1px transparent solid;
+    cursor: pointer;
+    padding: 8px 0px;
+}
+#file-picker-list {
+    overflow: auto;
+}
+.Folder_Pickup_ResultRowSelected {
+    background-color: #E7E7E7;
+}
+#driveFileListLoading {
+    position: absolute;
+    width: 90%;
+    padding: 0px 10px 0 10px;
+    z-index: 100;
+    top: 10px;
+}
 
 
 @media (min-width: 992px){

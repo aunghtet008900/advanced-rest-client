@@ -1,10 +1,10 @@
 
-function RestClientUI() {
+function RestClientRequestUI() {
     this.headersCodeMirror = null;
 }
 
-RestClientUI.prototype = {
-    constructor: RestClientUI,
+RestClientRequestUI.prototype = {
+    constructor: RestClientRequestUI,
     initialize: function() {
         this.observeUiEvents();
 
@@ -21,7 +21,7 @@ RestClientUI.prototype = {
     uiEvent: createCustomeEvent,
     /// Initialize URL panel with URL editor
     initUrlField: function() {
-        var urlContainer = $('#url-panel');
+        var urlContainer = jQuery('#url-panel');
         urlContainer.on('click', function(e) {
             if (e.target.id) {
                 switch (e.target.id) {
@@ -38,7 +38,7 @@ RestClientUI.prototype = {
                         this.appendUrlQueryParamRow();
                         break;
                     case 'remove-query-param':
-                        $(e.target).parents('.query-param-row').remove();
+                        jQuery(e.target).parents('.query-param-row').remove();
                         break;
                 }
             }
@@ -46,7 +46,7 @@ RestClientUI.prototype = {
         var scrollShaddowAdded = false;
         var nav = document.querySelector('#topNav');
         //handle page scroll and add shadow
-        $(window).on('scroll', function(e) {
+        jQuery(window).on('scroll', function(e) {
             if (document.body.scrollTop === 0) {
                 if (scrollShaddowAdded) {
                     scrollShaddowAdded = false;
@@ -64,12 +64,12 @@ RestClientUI.prototype = {
     /// Open or close URL editor panel 
     toggleUrlEditor: function(e) {
 
-        var container = $('#url-panel');
+        var container = jQuery('#url-panel');
         if (container.length === 0)
             return;
 
-        var elements = $('#url-panel [data-tabindex="change"]');
-        var fullUrlField = $('#full-request-url');
+        var elements = jQuery('#url-panel [data-tabindex="change"]');
+        var fullUrlField = jQuery('#full-request-url');
         if (container.hasClass('expanded')) {
             container.trigger('toggle', ['Custom', 'before-close']);
             //close
@@ -82,7 +82,7 @@ RestClientUI.prototype = {
             container.addClass('expanded');
             fullUrlField.attr('placeholder', 'enter server URL here (e.g. http://my.server:8080)');
             //ensure that there is at least one query parametes row
-            var queryContainer = $('#query-params-container');
+            var queryContainer = jQuery('#query-params-container');
             if (queryContainer.children().length === 1) {
                 this.appendUrlQueryParamRow();
             }
@@ -107,7 +107,7 @@ RestClientUI.prototype = {
         }
         var container = document.querySelector('#query-params-container');
         container.appendChild(content);
-        $('.has-tooltip', container).popover({trigger: 'hover'});
+        jQuery('.has-tooltip', container).popover({trigger: 'hover'});
     },
     extractQueryParamsValues: function(containerRow) {
         var key = containerRow.children[0].value;
@@ -197,12 +197,12 @@ RestClientUI.prototype = {
         return {key: key, value: value};
     },
     initHttpMethod: function() {
-        $('#method-panel').change(function(e) {
+        jQuery('#method-panel').change(function(e) {
             if (!e.target.value) {
                 return;
             }
             var method = e.target.value;
-            $(e.target).trigger('httpmethodchange', method);
+            jQuery(e.target).trigger('httpmethodchange', method);
 
             //movile view - select option
             if (e.target.id === 'selectedHttpMethod') {
@@ -210,20 +210,20 @@ RestClientUI.prototype = {
                 if (defaultMethods.indexOf(method) === -1) {
                     //alternative method
                     document.querySelector('#HttpMethodOTHERValue').removeAttribute('disabled');
-                    $('#HttpMethodOTHERValue').val(method);
+                    jQuery('#HttpMethodOTHERValue').val(method);
                     return;
                 }
 
-                $('#HttpMethod' + method).click();
+                jQuery('#HttpMethod' + method).click();
                 if (method === 'OTHER') {
-                    var dialog = $('#addMethodDialod');
+                    var dialog = jQuery('#addMethodDialod');
                     dialog.modal();
-                    $('#dialog-save-http-method', dialog).on('click', function(e) {
-                        var value = $('#dialog-add-http-method', dialog).val();
-                        $('#HttpMethodOTHERValue').val(value);
+                    jQuery('#dialog-save-http-method', dialog).on('click', function(e) {
+                        var value = jQuery('#dialog-add-http-method', dialog).val();
+                        jQuery('#HttpMethodOTHERValue').val(value);
 
-                        $('#selectedHttpMethod')
-                                .append($("<option></option>")
+                        jQuery('#selectedHttpMethod')
+                                .append(jQuery("<option></option>")
                                 .attr("value", value)
                                 .attr('selected', true)
                                 .text(value));
@@ -245,15 +245,15 @@ RestClientUI.prototype = {
      */
     initTabs: function() {
 
-        $('.nav-tabs a').click(function(e) {
+        jQuery('.nav-tabs a').click(function(e) {
             e.preventDefault();
             var target = e.target.dataset['target'];
             if (!target)
                 return;
-            $('a[data-target="' + target + '"]').tab('show');
+            jQuery('a[data-target="' + target + '"]').tab('show');
         });
 
-        $('a[data-toggle="tab"]').on('show.bs.tab', function(e) {
+        jQuery('a[data-toggle="tab"]').on('show.bs.tab', function(e) {
             if (e.target.dataset['target']) {
                 var type;
                 switch (e.target.dataset['target']) {
@@ -295,7 +295,7 @@ RestClientUI.prototype = {
                 break;
         }
         if (wrap) {
-            var queryContainer = $(wrap);
+            var queryContainer = jQuery(wrap);
             if (queryContainer.children().length === 1) {
                 this.appendHttpDataRow(type);
             }
@@ -306,7 +306,7 @@ RestClientUI.prototype = {
      * @returns {undefined}
      */
     initTooltips: function() {
-        $('.has-tooltip').tooltip();
+        jQuery('.has-tooltip').tooltip();
     },
     /**
      * Enable CodeMirror for HTTP headers raw input.
@@ -329,7 +329,7 @@ RestClientUI.prototype = {
                     var keys = [0, 16, 17, 20, 27, 33, 34, 35, 36, 37, 38, 39, 40, 45, 91];
                     if (keys.indexOf(event.keyCode) !== -1)
                         return;
-                    $('#RawHttpHeaders').val(inst.getValue());
+                    jQuery('#RawHttpHeaders').val(inst.getValue());
                 }
             }
         };
@@ -397,7 +397,7 @@ RestClientUI.prototype = {
      */
     initRequestHeaders: function() {
         var context = this;
-        $('#HttpHeadersPanel').click(function(e) {
+        jQuery('#HttpHeadersPanel').click(function(e) {
             if (e.target.dataset['action']) {
                 e.preventDefault();
                 switch (e.target.dataset['action']) {
@@ -405,7 +405,7 @@ RestClientUI.prototype = {
                         context.appendHttpDataRow('header');
                         break;
                     case 'remove-request-header-param':
-                        $(e.target).parents('.request-header-param-row').remove();
+                        jQuery(e.target).parents('.request-header-param-row').remove();
                         break;
                 }
             }
@@ -459,7 +459,7 @@ RestClientUI.prototype = {
         }
         var container = document.querySelector(wrap);
         container.appendChild(content);
-        $('.has-tooltip', container).tooltip();
+        jQuery('.has-tooltip', container).tooltip();
 
         var eventName = type + '.field.added';
         var event = this.uiEvent(eventName);
@@ -467,7 +467,7 @@ RestClientUI.prototype = {
     },
     initRequestPayload: function() {
         var context = this;
-        $('#HttpPayloadPanel').click(function(e) {
+        jQuery('#HttpPayloadPanel').click(function(e) {
             if (e.target.dataset['action']) {
                 e.preventDefault();
                 switch (e.target.dataset['action']) {
@@ -478,7 +478,7 @@ RestClientUI.prototype = {
                         context.appendHttpDataRow('payload');
                         break;
                     case 'remove-payload-file-param':
-                        var row = $(e.target).parents('.request-payload-file-row');
+                        var row = jQuery(e.target).parents('.request-payload-file-row');
                         var wrapper = row.parent();
                         row.remove();
                         if (wrapper.length > 0) {
@@ -487,7 +487,7 @@ RestClientUI.prototype = {
                         }
                         break;
                     case 'remove-payload-param':
-                        var row = $(e.target).parents('.request-payload-row');
+                        var row = jQuery(e.target).parents('.request-payload-row');
                         var wrapper = row.parent();
                         row.remove();
                         if (wrapper.length > 0) {
@@ -500,9 +500,9 @@ RestClientUI.prototype = {
         });
     },
     observePageUnload: function() {
-        window.addEventListener("beforeunload", function() {
+        chrome.runtime.onSuspend.addListener(function() { 
             this.saveUiState();
-        }.bind(this), false);
+        }.bind(this));
     },
     saveUiState: function() {
         var data = {
@@ -523,11 +523,11 @@ RestClientUI.prototype = {
                 this.toggleUrlEditor(null);
             }
             if (result.headersTab !== '') {
-                $('a[data-target="#' + result.headersTab + '"]').tab('show');
+                jQuery('a[data-target="#' + result.headersTab + '"]').tab('show');
                 this.ensureFormHasRow('header');
             }
             if (result.payloadTab !== '') {
-                $('a[data-target="#' + result.payloadTab + '"]').tab('show');
+                jQuery('a[data-target="#' + result.payloadTab + '"]').tab('show');
                 this.ensureFormHasRow('payload');
             }
         }.bind(this));
@@ -587,7 +587,7 @@ RestClientUI.prototype = {
      * </pre>
      */
     observeUiEvents: function() {
-        var body = $('body');
+        var body = jQuery('body');
         var context = this;
         //Form error - disable action buttons
         body.on('formerror', function(e) {
@@ -667,7 +667,7 @@ RestClientUI.prototype = {
         document.querySelector('#XmlHtmlPanel').innerHTML = '';
 
         //show default tab
-        $('a[href="#rawResponseTab"]').tab('show');
+        jQuery('a[href="#rawResponseTab"]').tab('show');
 
         document.querySelector('#response-panel').classList.remove('hidden');
         document.querySelector('#responseBodyPanels').classList.remove('hidden');
@@ -703,13 +703,13 @@ RestClientUI.prototype = {
         statusPanel.className = panelCls;
     },
     handleLeftMenu: function() {
-        var menuTriggers = $('.left-menu-trigger');
-        var menuPanel = $('#leftnav');
+        var menuTriggers = jQuery('.left-menu-trigger');
+        var menuPanel = jQuery('#leftnav');
         menuTriggers.on('mouseover', function(e) {
             menuPanel.addClass('active');
         });
         menuPanel.on('mouseout', function(e) {
-            if (e.toElement && e.toElement.id !== 'leftnav' && $(e.toElement).parents('#leftnav').length === 0) {
+            if (e.toElement && e.toElement.id !== 'leftnav' && jQuery(e.toElement).parents('#leftnav').length === 0) {
                 menuPanel.removeClass('active');
             }
         });
@@ -720,22 +720,29 @@ RestClientUI.prototype = {
      * @returns {Void}
      */
     showPage: function(newPage){
-        var query;
+        var query, pageName;
         switch(newPage){
             case 'request':
                 query = '#page-request';
-                
+                pageName = 'Request';
             break;
             case 'history': 
                 query = '#page-history'; 
+                pageName = 'History';
                 break;
-            case 'saved': query = ''; break;
-            case 'settings': query = ''; break;
-            case 'about': query = ''; break;
-            case 'socket': query = ''; break;
+            case 'saved': query = ''; pageName = 'Saved'; break;
+            case 'settings': 
+                query = '#page-settings'; 
+                pageName = 'Settings'; 
+                break;
+            case 'about': 
+                query = '#page-about'; 
+                pageName = 'About'; 
+                break;
+            case 'socket': query = ''; pageName = 'Socket'; break;
         }
         if(!query) return;
-        var active = document.querySelector('.container.page.active')
+        var active = document.querySelector('.container.page.active');
         if("#"+active.id === query) return;
         var page = document.querySelector(query);
         if(!page) return;
@@ -747,12 +754,59 @@ RestClientUI.prototype = {
         
         page.classList.remove('hidden');
         page.classList.add('active');
+        
+        jQuery('#NavControllerName').text(pageName);
     }
 };
 
+function RestClientHistoryUI() {
+    this.initialized = false;
+}
+RestClientHistoryUI.prototype.initialize = function(){
+    if(this.initialized) return;
+    this.initialized = true;
+    this.observeFields();
+    
+}
+RestClientHistoryUI.prototype.observeFields = function(){
+//    var container = document.querySelector('#HistoryResults');
+    var style = document.querySelector('#HistorySearchStyle');
+    document.getElementById('HistorySearch').addEventListener('input', function(e) {
+        if (!this.value) {
+            style.innerHTML = "";
+            return;
+        }
+        style.innerHTML = "#HistoryResults .searchable:not([data-index*=\"" + this.value.toLowerCase() + "\"]) { display: none; }";
+    });
+}
+RestClientHistoryUI.prototype.addListItem = function(item) {
+    var content = document.querySelector('#saved-list-item-template').content.cloneNode(true);
+    var date = new Date(item.time);
+    var month = getShortMonth(date.getMonth());
+    var day = date.getDate();
+    if(day < 10){
+        day = '0'+day;
+    }
+    content.querySelector('.item-date .day').innerText = day;
+    content.querySelector('.item-date .month').innerText = month;
+    content.querySelector('.item-method').innerText = item.method;
+    content.querySelector('.item-url').innerText = item.url;
+    content.querySelector('.item-url').setAttribute('title',item.url);
+    content.querySelector('.responses-counter').innerText = item.responses ? item.responses.length : 0;
+    var ids = content.querySelectorAll('[data-id]');
+    for(var i=0, len=ids.length; i<len; i++){
+        ids[i].dataset['id'] = item.historyid;
+    }
+    //index combined with URL, method
+    var index = item.url.toLowerCase();
+    index += item.method.toLowerCase();
+    content.querySelector('[data-index]').dataset['index'] = index;
+    var container = document.querySelector('#HistoryResults');
+    container.appendChild(content);
+}
 
 
-(function() {
-    window.restClientUI = new RestClientUI();
-    window.restClientUI.initialize();
-})();
+
+window.restClientRequestUI = new RestClientRequestUI();
+window.restClientRequestUI.initialize();
+

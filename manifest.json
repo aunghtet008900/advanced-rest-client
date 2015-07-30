@@ -1,29 +1,31 @@
 {
-  "name": "Advanced REST client - Dev 3",
-  "description": "The web developers helper program to create and test custom HTTP requests.",
-  "icons": {
-    "16": "img/arc_icon_16.png",
-    "128": "img/arc_icon_128.png"
-  },
-  "version": "4.0",
-  "manifest_version": 2,
-  "permissions": [
-    "webRequest",
-    "declarativeWebRequest",
-    "<all_urls>",
-    "storage",
-    "unlimitedStorage",
-    "clipboardWrite"
-  ],
-  "options_page": "index.html#options",
-  "background": {
-    "scripts": ["js/event.js","js/idbstore.min.js"],
-    "persistent": true
-  },
-  "app": {
-    "launch": {
-      "local_path": "index.html"
+    "name": "Advanced REST client - Dev 3",
+    "description": "The web developers helper program to create and test custom HTTP requests.",
+    "icons": {
+        "16": "img/arc_icon_16.png",
+        "128": "img/arc_icon_128.png"
+    },
+    "version": "4.0",
+    "manifest_version": 2,
+    "permissions": [
+        "<all_urls>",
+        "storage",
+        "identity",
+        "unlimitedStorage",
+        "clipboardWrite",
+        {"socket": ["tcp-connect:*:*"]}
+    ],
+    "oauth2": {
+        "client_id": "10525470235.apps.googleusercontent.com",
+        "scopes": [
+            "https://www.googleapis.com/auth/drive.file",
+            "https://www.googleapis.com/auth/drive.readonly.metadata",
+            "https://www.googleapis.com/auth/userinfo.profile"
+        ]
+    },
+    "app": {
+        "background": {
+            "scripts": ["js/event.js", "js/idbstore.min.js"]
+        }
     }
-  },
-  "content_security_policy": "script-src 'unsafe-eval' chrome-extension:// chrome-extension-resource:// https://*.google.com https://chromerestclient.appspot.com https://ssl.google-analytics.com https://www-onepick-opensocial.googleusercontent.com https://*.googleapis.com https://*.googleusercontent.com 'self'; object-src chrome-extension:// chrome-extension-resource:// 'self'; frame-src https://apis.google.com https://www.google.com https://docs.google.com https://www-onepick-opensocial.googleusercontent.com https://www.googleapis.com https://accounts.google.com chrome-extension:// chrome-extension-resource:// https://plusone.google.com  https://doc-0k-0o-docs.googleusercontent.com https://*.googleusercontent.com 'self'"
 }

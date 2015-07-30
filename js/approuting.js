@@ -10,7 +10,9 @@ AppRouter.prototype = {
         this.appRoutes();
         this.router.start();
     },
-    
+    navigate: function(page){
+        this.router.checkRoutes({data: {url: page}});
+    },
     appRoutes: function(){
         
         var firePageChangeEvent = function(page, details){
@@ -30,27 +32,25 @@ AppRouter.prototype = {
             firePageChangeEvent('request');
         });
         this.router.route('/index.html\\?request/:source/:id', function(source, id) {
-            firePageChangeEvent('request', {source: source, id: id});
+            firePageChangeEvent('request', {action: source, id: id});
         });
-        
         this.router.route('/index.html\\?history', function() {
             firePageChangeEvent('history');
         });
+        this.router.route('/index.html\\?history/:action/:id', function(action, id) {
+            firePageChangeEvent('history', {action: action, id: id});
+        });
         this.router.route('/index.html\\?settings', function() {
             firePageChangeEvent('settings');
-//            window.restClientUI.showPage('settings');
         });
         this.router.route('/index.html\\?about', function() {
             firePageChangeEvent('about');
-//            window.restClientUI.showPage('about');
         });
         this.router.route('/index.html\\?socket', function() {
             firePageChangeEvent('socket');
-//            window.restClientUI.showPage('socket');
         });
         this.router.route('/index.html\\?saved', function() {
             firePageChangeEvent('saved');
-//            window.restClientUI.showPage('saved');
         });
     }
 };
