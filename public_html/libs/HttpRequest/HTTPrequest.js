@@ -91,7 +91,7 @@
     /**
      * Base class for HTTPRequestImplementation object.
      * This object has method {EventSource.addEventListener} to listen for events.
-     * 
+     *
      * Available events:
      * <ul>
      * <li>'start' - fired right after the request has started</li>
@@ -114,7 +114,7 @@
      * new HttpRequest({url:'http://www.google.com', 'load': function(e){ ... }})
      * .execute();
      * </code>
-     * 
+     *
      * @param {Object} opts Parameter for the request
      * <ul>
      *  <li>url (String) - the request URL. The error will throw if this parameter is omnited.</li>
@@ -152,7 +152,7 @@
             'load': null,
             'error': null,
             '_foreceport': false,
-            'debug': false
+            'debug': true
         };
 
         var uri = new URI(opts.url);
@@ -369,13 +369,13 @@
 
             var context = this;
             this._connect(this._makeRequest.bind(this), function(connectInfo) {
-                
+
                 //
                 // Probably it's because URL doeas not exists. Or actually any other error that I'm not aware off.
                 // To be checked.
                 //
-                
-                
+
+
                 context.log('Can\'t create socket. Error code: ', connectInfo);
                 context.dispatchEvent('error', {
                     'code': connectInfo,
@@ -436,7 +436,7 @@
          * 3) Connect
          * 4) Set readyState to 1 if connected
          * 5) Call callback
-         * 
+         *
          * @param {Function} readyCallback Callback called when connection is ready
          * @param {Function} errorCallback Callback called when connection has not been established.
          * @returns {Void}
@@ -482,7 +482,7 @@
         },
         /**
          * Read data from opened socket.
-         * 
+         *
          * @param {Object} readInfo
          * @returns {Void}
          */
@@ -522,7 +522,7 @@
          * Handle response from socket.
          * It may not be conplete response. If Transfer-Encoding == 'chunked' then message may be split to many messages so there is no sure that this is full response body.
          * Response body starts with HTTP status, headers list and the payload.
-         * This method will extract message body, status and headers and save it to proper fields. 
+         * This method will extract message body, status and headers and save it to proper fields.
          * If there is no status line it means that this is another part of the response and it should append payload to proper field.
          * @param {ArrayBuffer} response
          * @returns {Void}
@@ -637,7 +637,7 @@
             return data;
         },
         /**
-         * 
+         *
          * @param {Uint8Array} array
          * @returns {Void}
          */
@@ -836,9 +836,9 @@
 
     /**
      * Wrapper for BaseHttpRequest.
-     * 
+     *
      * This object has method {EventSource.addEventListener} to listen for events.
-     * 
+     *
      * Available events:
      * <ul>
      * <li>'start' - fired right after the request has started</li>
@@ -861,7 +861,7 @@
      * new HttpRequest({url:'http://www.google.com', 'load': function(e){ ... }})
      * .execute();
      * </code>
-     * 
+     *
      * @param {Object} opts Parameter for the request
      * <ul>
      *  <li>"url" (String) - the request URL. The error will throw if this parameter is omnited.</li>

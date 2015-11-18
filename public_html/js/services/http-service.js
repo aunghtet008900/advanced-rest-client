@@ -1,12 +1,12 @@
 /**
  * @ngname Overview
  * @name arc.httpService
- * 
+ *
  * @description
  * Service responsible for making HTTP requests, saving request history and reportinh results.
  */
 angular.module('arc.httpService', [])
-  .factory('HttpRequest', 
+  .factory('HttpRequest',
   ['$q', 'RequestValues', '$rootScope', 'APP_EVENTS','$http','ChromeTcp', 'history',
     function($q, RequestValues, $rootScope, APP_EVENTS, $http, ChromeTcp, history) {
         $rootScope.$on(APP_EVENTS.START_REQUEST, function(e){
@@ -21,24 +21,24 @@ angular.module('arc.httpService', [])
                 saveHistory(e);
             });
         });
-    
+
     function saveHistory(response){
         history.save(response);
     };
-    
-    
+
+
     /**
-     * 
+     *
      * @returns {$q@call;defer.promise}
      */
     function runRequest(){
         var deferred = $q.defer();
-        
+
         function onRequestObjectReady(request){
-            
+
             request.addEventListener('load', function(e){
                 deferred.resolve(e);
-            }).addEventListener('error', function(e){ 
+            }).addEventListener('error', function(e){
                 console.log('ERROR',e);
                 if(e&&e[0]&&!!e[0].code){
                     $http.get('data/connection_errors.json').then(function(result){
@@ -50,24 +50,24 @@ angular.module('arc.httpService', [])
                                     'code': e[0].code,
                                     'message': message
                                 });
-                                
+
                                 delete result.data;
                             }
                         }
                     });
                 }
-                
-            }).addEventListener('timeout', function(e){ 
+
+            }).addEventListener('timeout', function(e){
                 deferred.reject({'timeout':true});
-            }).addEventListener('start', function(e){ 
+            }).addEventListener('start', function(e){
                 //console.log('START',e);
-            }).addEventListener('progress', function(e){ 
+            }).addEventListener('progress', function(e){
                // console.log('PROGRESS',e);
-            }).addEventListener('uploadstart', function(e){ 
+            }).addEventListener('uploadstart', function(e){
                 //console.log('UPLOADSTART',e);
-            }).addEventListener('upload', function(e){ 
+            }).addEventListener('upload', function(e){
                 //console.log('UPLOAD',e);
-            }).addEventListener('abort', function(e){ 
+            }).addEventListener('abort', function(e){
                 deferred.reject({'abort':true});
             })
             .send();
@@ -75,7 +75,7 @@ angular.module('arc.httpService', [])
         try{
             RequestValues.store();
         } catch(e){}
-        
+
         createRequestObject()
         .then(applyMagicVariables)
         .then(createTheRequest)
@@ -85,7 +85,7 @@ angular.module('arc.httpService', [])
         });
         return deferred.promise;
     }
-    
+
     function createRequestObject(){
         var deferred = $q.defer();
         var requestObject = {
@@ -98,24 +98,24 @@ angular.module('arc.httpService', [])
         deferred.resolve(requestObject);
         return deferred.promise;
     }
-    
-    
+
+
     function applyMagicVariables(requestObject){
         var deferred = $q.defer();
         deferred.resolve(requestObject);
         return deferred.promise;
     }
-    
+
     function createTheRequest(requestObject){
         var deferred = $q.defer();
-        
+
         var requestParams = {
             'url': requestObject.url,
             'method': requestObject.method,
             'timeout': 30000,
-            'debug': false
+            'debug': true
         };
-        
+
         if(RequestValues.hasPayload() && requestObject.payload){
             requestParams.body = requestObject.payload;
         }
@@ -128,14 +128,14 @@ angular.module('arc.httpService', [])
             requestParams.headers = _headers;
         }
         var req = ChromeTcp.create(requestParams);
-        
+
         deferred.resolve(req);
         return deferred.promise;
     }
-    
-    
+
+
     var service = {
-       'run': runRequest 
+       'run': runRequest
     };
     return service;
 }]);

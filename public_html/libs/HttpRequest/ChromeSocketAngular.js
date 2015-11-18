@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2014 Paweł Psztyć.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -88,12 +88,12 @@ angular.module('chrome.http', [])
             return headerValue;
         }
     };
-    
-    
-    
-    
+
+
+
+
     /**
-     * 
+     *
      * @param {Object} options Request options:
      *  Required (String) url - Request URL
      *  Required (String) method- Request method
@@ -101,7 +101,7 @@ angular.module('chrome.http', [])
      *  Optional (String) 'body' - Request payload. Should not be set if request does not allow to carry a payload. TODO: allow file upload. Default null.
      *  Optional (int) 'timeout' - Request timeout. After this time request will be aborted and timeout and abort event fired. Default 0 - no timeout.
      *  Optional (bool) 'fallowredirects' - If false the request will fire load event when firest redirect occure. Default true.
-     *  Optional (bool) 'debug' - Enable debug messages in console output. Default false. 
+     *  Optional (bool) 'debug' - Enable debug messages in console output. Default false.
      *  Optional (Object) 'on' - event listeners for the request:
      *      (Function) 'load' - fired on request end
      *      (Function) 'error' - fired on request error
@@ -111,15 +111,15 @@ angular.module('chrome.http', [])
      *      (Function) 'upload' - firead when the request payload has been sent.
      *      (Function) 'timeout' - fired on timeout
      *      (Function) 'abort' - fired either with timeout or when the user (or the app) interrupt.
-     *  
+     *
      * @returns {_L18.ChromeTcpConnection}
      */
     function ChromeTcpConnection(options){
-        
+
         if(typeof Zlib === 'undefined'){
             throw "Library Zlib is required by this API.";
         }
-        
+
         //this.debug = false;
         /*
          Connection properties object.
@@ -131,10 +131,10 @@ angular.module('chrome.http', [])
          * Event listeners.
          */
         this.listeners_ = {};
-        
+
         this._registerSocketCallbacks();
     }
-    
+
     /**
      * Create connection properties object.
      * This class object can hold many connections at once. This method creates
@@ -143,7 +143,7 @@ angular.module('chrome.http', [])
      * @param {Object} options Object passed to [createConnection] function.
      */
     ChromeTcpConnection.prototype._createProperties = function(options){
-        
+
         var defaultOptions = {
             'headers': {},
             'body': null,
@@ -153,10 +153,10 @@ angular.module('chrome.http', [])
             'debug': false,
             'redirect': []
         };
-        
+
         var uri = new URI(options.url);
         var options = angular.extend({}, defaultOptions, options);
-        
+
         function getPort(){
             var port = null;
             var protocol = uri.protocol();
@@ -175,7 +175,7 @@ angular.module('chrome.http', [])
             }
             return port;
         }
-        
+
         var uriData = {
             host: uri.host(),
             request_path: uri.resource(), //uri.path(),
@@ -184,10 +184,10 @@ angular.module('chrome.http', [])
         if (uriData.request_path.trim() === '') {
             uriData.request_path = '/';
         }
-        
+
         this.debug = options.debug;
         this.redirect = options.redirect;
-        
+
         /**
          * Connection properties
          */
@@ -342,17 +342,17 @@ angular.module('chrome.http', [])
             /**
              * If true the message is ended.
              * For chunked messages it's end is marked as:
-             * 
+             *
              * 0\r\n
              * \r\n
-             * 
+             *
              * If such message is found, whole message is processed.
              */
             ended: false
         };
-        
+
         //setup listeners
-        
+
         angular.forEach(options.on, function(fn,type){
             if(typeof fn !== 'function'){
                 if(options.debug)
@@ -362,18 +362,18 @@ angular.module('chrome.http', [])
             this.addEventListener(type, fn);
         }, this);
     };
-    
+
     /**
      * Create a new connection.
-     * This method will open a new socket 
-     * 
+     * This method will open a new socket
+     *
      * @returns {$q@call;defer.promise}
      *  .resolve() function will return socket identifier which should be used with this.send() function.
      */
     ChromeTcpConnection.prototype._createConnection = function(){
         var defered = $q.defer();
         var context = this;
-        
+
         this._connect(this.request.uri.host, this.request.uri.port)
             .then(function(socketId){
                 if(context.debug){
@@ -395,7 +395,7 @@ angular.module('chrome.http', [])
             });
         return defered.promise;
     };
-    
+
     ChromeTcpConnection.prototype._connect = function(host, port){
         var defered = $q.defer();
         var context = this;
@@ -405,22 +405,46 @@ angular.module('chrome.http', [])
                 console.info('Created socket with socketId: ',socketId);
                 console.info('Connecting to host : ', host, 'on port: ', port);
             }
-            chrome.sockets.tcp.connect(socketId, host, port, function(result){
-                if(context.debug){
-                    console.info('Connected to host : ', host, 'on port: ', port, 'using socket: ', socketId);
-                }
-                if (result >= 0) {
-                    defered.resolve(socketId);
-                } else {
-                    defered.reject(result);
-                }
+            chrome.sockets.tcp.setPaused(socketId, true, function(){
+              chrome.sockets.tcp.connect(socketId, host, port, function(result){
+                  if(context.debug){
+                      console.info('Connected to host : ', host, 'on port: ', port, 'using socket: ', socketId);
+                  }
+                  var _fn = function(){
+                    if(this >= 0){
+                      defered.resolve(socketId);
+                    } else {
+                      defered.reject(this);
+                    }
+                  };
+
+                  if(port === 443){
+                    if(context.debug){
+                        console.info('Requesting secure connection for the request on socket #' + socketId);
+                    }
+
+                    chrome.sockets.tcp.secure(socketId, {},function(result){
+                      if(chrome.runtime.lastError){
+                        console.error('Secure connection error: ', chrome.runtime.lastError);
+                      }
+                      chrome.sockets.tcp.setPaused(socketId, false, function(){
+                        _fn.call(result);
+                      });
+                    });
+
+                  } else {
+                    chrome.sockets.tcp.setPaused(socketId, false, function(){
+                      _fn.call(result);
+                    });
+                  }
+              });
             });
         });
-        
-        
+
+
         return defered.promise;
     };
-    
+
     ChromeTcpConnection.prototype.send = function(){
         var context = this;
         var defered = $q.defer();
@@ -433,7 +457,7 @@ angular.module('chrome.http', [])
             .catch(defered.reject);
         return defered.promise;
     };
-    
+
     ChromeTcpConnection.prototype._makeRequest = function(){
         var defered = $q.defer();
         if(this.connection.aborted) {
@@ -445,7 +469,7 @@ angular.module('chrome.http', [])
                 'code': '0',
                 'message': 'Trying to make a request on inactive socket'
             });
-            throw 'Trying to make a request on inactive socket'; 
+            throw 'Trying to make a request on inactive socket';
         }
         var context = this;
         this._prepageMessageBody()
@@ -458,10 +482,10 @@ angular.module('chrome.http', [])
         });
         return defered.promise;
     };
-    
+
     ChromeTcpConnection.prototype._prepageMessageBody = function(){
         var defered = $q.defer();
-        
+
         if(this.connection.aborted) {
             defered.resolve();
             return defered.promise;
@@ -480,7 +504,7 @@ angular.module('chrome.http', [])
                 }
             }
         }
-        
+
         //@TODO
         //Other than String request body
         if (this.request.data.body) {
@@ -527,20 +551,21 @@ angular.module('chrome.http', [])
         });
         return defered.promise;
     };
-    
-    
+
+
     /**
      * Register callback functions for socket.
+     * TODO: bind function returns new function - removeeventlistener will not work. Use getter to receive signe function instance.
      * @returns {undefined}
      */
     ChromeTcpConnection.prototype._registerSocketCallbacks = function(){
-        
+
         chrome.sockets.tcp.onReceive.addListener(this._socketReceived.bind(this));
-        
+
         chrome.sockets.tcp.onReceiveError.addListener(this._socketReceivedError.bind(this));
     };
     /**
-     * 
+     *
      * @param {Object} info The event data.
      *  socketId (integer) The socket identifier.
      *  data (ArrayBuffer) The data received, with a maxium size of bufferSize.
@@ -554,7 +579,7 @@ angular.module('chrome.http', [])
             }
             return;
         }
-        
+
         if(info.data){
             if(this.debug){
                 console.info(performance.now(), 'Has part of the message');
@@ -585,25 +610,25 @@ angular.module('chrome.http', [])
      * Handle response from socket.
      * It may not be complete response. If Transfer-Encoding == 'chunked' then message may be split to many messages so there is no sure that this is full response body.
      * Response body starts with HTTP status, headers list and the payload.
-     * This method will extract message body, status and headers and save it to later fields. 
+     * This method will extract message body, status and headers and save it to later fields.
      * If there is no status line it means that this is another part of the response and it should append payload to proper field.
-     * 
+     *
      * @param {ArrayBuffer} response
      * @returns {undefined}
      */
     ChromeTcpConnection.prototype._handleMessage = function(response){
-       
+
         if(this.connection.aborted) return;
         var array = new Uint8Array(response);
-        
+
         if (!this.response.hasHeaders) {
             array = this._handleServerHeaders(array);
         }
-        
+
         if(!array){
             return;
         }
-        
+
         try {
             this._readPayloadData(array);
         } catch (e) {
@@ -633,12 +658,12 @@ angular.module('chrome.http', [])
      * Handle HTTP response message.
      * Before payload there is server response with status and headers.
      * It's delimited from the payload by two CR characters.
-     * 
+     *
      * @param {Uint8Array} array Input array with arraybuffer.
      * @returns {Uint8Array} Truncated response containing payload only.
      */
     ChromeTcpConnection.prototype._handleServerHeaders = function(array){
-        
+
         if(this.response.tmpResponse !== null){
             var newLength = this.response.tmpResponse.length + array.length;
             var newArray = new Uint8Array(newLength);
@@ -662,7 +687,7 @@ angular.module('chrome.http', [])
 
             return null;
         }
-        
+
         // At this point it means that current part of the response doeas not contain all response headers
         // because socket's buffer size if less than headers message length.
         if(!this.response.hasHeaders){
@@ -674,7 +699,7 @@ angular.module('chrome.http', [])
             }
             return;
         }
-        
+
         // quite relevant at this point. Before continue the app need to know if ther's a chunked Transfer-Encoding or it's Content-Length.
         var tr = this.response.data.getResponseHeader('Transfer-Encoding');
         if (tr && tr === 'chunked') {
@@ -686,28 +711,28 @@ angular.module('chrome.http', [])
                 this.response.suspectedLength = parseInt(cs);
             }
         }
-        
+
         return array;
     };
-    
+
     /**
      * Read headers data from bytes array.
      * Read until CRCR occur (ANCII 13+10+13+10 sentence)
-     * 
-     * This method can't be asynchronius. 
-     * If this function will release event loop it will cause new response part 
+     *
+     * This method can't be asynchronius.
+     * If this function will release event loop it will cause new response part
      * to arrive without setting current one.
-     * 
+     *
      * @param {Uint8Array} array
      * @returns {number} Position of the array where headers ends
      */
     ChromeTcpConnection.prototype._readResponseHeaders = function(array){
         if(this.connection.aborted) return;
-        
+
         //
-        // Looking for CR CR characters. It is a delimiter for HTTP status message 
+        // Looking for CR CR characters. It is a delimiter for HTTP status message
         //
-        
+
         var foundDelim = false;
         var i = 0;
         for (; i < array.length; ++i) {
@@ -725,8 +750,8 @@ angular.module('chrome.http', [])
                 }
             }
         }
-        
-        
+
+
         //
         // If not found whole current message is only part of status message.
         // Wait until next part arrive.
@@ -737,15 +762,15 @@ angular.module('chrome.http', [])
             }
             return array;
         }
-        
-        
+
+
         //
         // The app has found HTTP status message.
         // Read it, set response status, headers, truncate the array and return it.
         //
-        
+
         var status = null, statusMessage = null, statusLine = null, headers = [];
-        
+
         // truncate array from start to the delimiter (CRCR) place.
         var headersArray = array.subarray(0, i);
         var headersMessage = this._arrayBufferToString(headersArray);
@@ -753,7 +778,7 @@ angular.module('chrome.http', [])
             console.info('Response message: ', headersMessage);
         }
         var splitted = headersMessage.split('\n');
-        
+
         //
         // A first line is the status. Rest of it are headers.
         //
@@ -763,7 +788,7 @@ angular.module('chrome.http', [])
         }
         statusLine = status_line.replace(/HTTP\/\d(\.\d)?\s/, '');
         status = statusLine.substr(0, statusLine.indexOf(' '));
-        
+
         try {
             status = parseInt(status);
         } catch (e) {
@@ -774,12 +799,12 @@ angular.module('chrome.http', [])
             this.connection.message = "Response doeas not contain status message.";
             return null;
         }
-        
+
         statusMessage = statusLine.substr(statusLine.indexOf(' ') + 1);
         if(this.debug){
             console.info('Response status: ', status, statusMessage, statusLine);
         }
-        
+
         ///
         /// Read a response headers
         ///
@@ -797,26 +822,26 @@ angular.module('chrome.http', [])
             console.info('Response headers: ', headers);
         }
         this.response.hasHeaders = true;
-        /// 
-        /// Create a response object 
+        ///
+        /// Create a response object
         ///
         this.response.data = new HttpResponse();
         this.response.data.headers = headers;
         this.response.data.status = status;
         this.response.data.statusText = statusMessage;
-        
-        
+
+
         array = array.subarray(i + 4);
         //array = this._setResponseLength(array);
-        
+
         return array;
     };
-    
+
     /**
      * Read response suspected length depending on response headers.
      * For Transfer-Encoding: chunked, each chunk has number of length in first line of the message.
      * If Content-Length header is present the response is in one chunk and this will be while message.
-     * 
+     *
      * @param {Uint8Array} array Response payload.
      * @returns {Uint8Array}
      * @deprecated It should not be used.
@@ -835,7 +860,7 @@ angular.module('chrome.http', [])
         }
         return array;
     };
-    
+
     /**
      * Sets content length and basic response data based on HTTP headers.
      * @returns {undefined}
@@ -844,22 +869,22 @@ angular.module('chrome.http', [])
         var cs = this.response.data.getResponseHeader('Content-Length');
         this.response.suspectedLength = parseInt(cs);
         if(this.response.payload === null){
-            this.response.payload = []; 
+            this.response.payload = [];
         }
     };
-    
+
     /**
      * Read payload data.
      * At this point there are not any HTTP messages likie status or headers.
-     * 
+     *
      * If the response is not chunked just put all in the array so it will be read later as string.
-     * 
+     *
      * If the response is chunked first the app need to know chunk size.
      * It is delimited between message parts by two CR characters and number (in HEX) which is a chunk size.
      * Everything between chunk sizes is response payload.
-     * 
+     *
      * Response is held in Unit8Array so Unit8Array.length is a length of characters (as an array of unsigned integers).
-     * 
+     *
      * @param {Uint8Array} array
      * @returns {undefined}
      */
@@ -868,7 +893,7 @@ angular.module('chrome.http', [])
         if(this.debug){
             console.group("_readPayloadData");
         }
-        
+
         if(array.length === 0){
             if(this.debug){
                 console.info('(%f) Array\'s empty. But it should work anyway.', performance.now());
@@ -876,12 +901,12 @@ angular.module('chrome.http', [])
             }
             return;
         }
-        
+
         if(!!!this.connection.chunked){
             //simply add response to the response array
             this.response.payload[this.response.payload.length] = array;
             this.response.responseRead += array.length;
-            
+
             if (this.response.responseRead === this.response.suspectedLength) {
                 this.response.ended = true;
             }
@@ -890,7 +915,7 @@ angular.module('chrome.http', [])
             }
             return;
         }
-        
+
         //
         // Note. At this point ther's no sure if current part is at the begining of chunk or not.
         // It's depended on socket's buffer size. So either it can be begining ot the chunk
@@ -898,21 +923,21 @@ angular.module('chrome.http', [])
         // or it can be part of a chunk that should be appended to previous payload.
         // Second case may include current chunk end and next chunk definition (end possibly next part of payload).
         //
-        
+
         if(!this.response.suspectedLength){
-            // No metter is this first chunk or any other. 
+            // No metter is this first chunk or any other.
             // At this point it should be only chunk size and the payload.
             array = this._readChunkSize(array);
-            
+
             if(array === -1 && this.response.ended){ //end if HTTP message.
                 if(this.debug){
                     console.groupEnd();
                 }
                 return;
             }
-            
-            if(!this.response.suspectedLength){
-                //Something bead happened. Definitely there's should be a chunk length here.
+
+            if(!this.response.suspectedLength){ //TODO: why is this here again??
+                //Something bed happened. Definitely there's should be a chunk length here.
                 //Can't contunue because ther's no sure that the response is OK.
                 this.connection.aborted = true;
                 this.connection.error = true;
@@ -926,9 +951,10 @@ angular.module('chrome.http', [])
                     console.log('Whole message:', this._getMessageString());
                     console.groupEnd();
                 }
+                //TODO: but it may be end of message? Check this out.
                 return;
             }
-            
+
             var narr = new Uint8Array(this.response.suspectedLength);
             if (this.response.chunkPayload) {
                 console.log('chunkPayload.length: ',this.response.chunkPayload.length,' suspectedLength: ', this.response.suspectedLength);
@@ -936,7 +962,7 @@ angular.module('chrome.http', [])
             }
             this.response.chunkPayload = narr;
         }
-        
+
         var shouldBe = this.response.suspectedLength - this.response.responseRead;
         if (shouldBe < 0) {
             if(this.debug){
@@ -945,12 +971,12 @@ angular.module('chrome.http', [])
             }
             return;
         }
-        
+
         if (shouldBe > array.length) {
             //Just fill current chunk array.
             this.response.chunkPayload.set(array, this.response.responseRead);
             this.response.responseRead += array.length;
-            
+
         } else if (shouldBe <= array.length) {
             //Fill only what's left to write and start over.
             this.response.chunkPayload.set(array.subarray(0, shouldBe), this.response.responseRead);
@@ -968,8 +994,8 @@ angular.module('chrome.http', [])
         }
     };
     /**
-     * 
-     * 
+     *
+     *
      * @param {Uint8Array} array
      * @returns {Uint8Array} Truncated response without chybk size line
      */
@@ -977,7 +1003,7 @@ angular.module('chrome.http', [])
         if(this.debug){
             console.group("_readChunkSize");
         }
-        
+
         if(this.connection.aborted) {
             if(this.debug){
                 console.warn('(%f) Request aborted', performance.now());
@@ -985,7 +1011,7 @@ angular.module('chrome.http', [])
             }
             return array;
         }
-        
+
         if(array.length === 0) {
             this.response.suspectedLength = 0;
             if(this.debug){
@@ -994,7 +1020,7 @@ angular.module('chrome.http', [])
             }
             return array;
         }
-        
+
         var endMarker = new Uint8Array([48, 13, 10, 13, 10]);
         if(angular.equals(endMarker,array)){
             this.response.ended = true;
@@ -1041,13 +1067,13 @@ angular.module('chrome.http', [])
         }
         return array.subarray(i + 2);
     };
-    
+
     /**
      * Read the response and return it as a string.
      * @returns {String}
      */
     ChromeTcpConnection.prototype._getMessageString = function(){
-        
+
         var bufferSize = 0;
         for (var i = 0, parts = this.response.payload.length; i < parts; i++) {
             bufferSize += this.response.payload[i].length;
@@ -1058,7 +1084,7 @@ angular.module('chrome.http', [])
             var payload = this.response.payload.shift();
             buffer.set(payload, written);
             written += payload.length;
-            
+
         }
         if (written > 0) {
             buffer = this._checkCompression(buffer);
@@ -1099,9 +1125,9 @@ angular.module('chrome.http', [])
         }
         return data;
     };
-    
+
     ChromeTcpConnection.prototype._setupTimeout = function(){
-        
+
         if(this.connection.aborted) return;
         if (this.request.timeout <= 0)
             return;
@@ -1115,7 +1141,7 @@ angular.module('chrome.http', [])
             });
         }, this.request.timeout);
     };
-    
+
     ChromeTcpConnection.prototype._onResponseReady = function(){
         if(this.connection.aborted) return;
         if(this.connection.timeoutTimer){
@@ -1125,27 +1151,27 @@ angular.module('chrome.http', [])
         if(this.debug){
             console.log(performance.now(), 'Response ready');
         }
-        
+
         var data = this._collectResponseData();
         this.dispatchEvent('load', data);
     };
-    
+
     ChromeTcpConnection.prototype._close = function(){
         chrome.sockets.tcp.disconnect(this.connection.socketId);
         chrome.sockets.tcp.close(this.connection.socketId);
         this.connection.readyState = 3;
-        
+
         chrome.sockets.tcp.onReceive.removeListener(this._socketReceived.bind(this));
         chrome.sockets.tcp.onReceiveError.removeListener(this._socketReceivedError.bind(this));
-        
+
         if(this.connection.timeoutTimer){
             window.clearTimeout(this.connection.timeoutTimer);
             delete this.connection.timeoutTimer;
         }
     };
-    
+
     /**
-     * 
+     *
      * @param {Object} info The event data.
      *  socketId (integer) The socket identifier.
      *  resultCode (integer) The result code returned from the underlying network call.
@@ -1156,7 +1182,7 @@ angular.module('chrome.http', [])
         if(this.debug){
             console.error(performance.now(), 'Disconnected or end of message.',info.resultCode, info.socketId);
         }
-        
+
         if(this.connection.socketId === info.socketId){
             this.connection.metrics.endTimestamp = Date.now();
             if(info.resultCode === -100){ //SSL connections are not supported yet.
@@ -1174,7 +1200,7 @@ angular.module('chrome.http', [])
                 });
             }
         }
-        
+
         //this._cleanUpResponse();
         this._close();
     };
@@ -1198,8 +1224,8 @@ angular.module('chrome.http', [])
         };
         return result;
     };
-    
-    
+
+
     ChromeTcpConnection.prototype._cleanUpResponse = function(){
         delete this.response.chunkPayload;
         delete this.response.hasHeaders;
@@ -1208,7 +1234,7 @@ angular.module('chrome.http', [])
         delete this.response.payload;
         delete this.response.message;
     };
-    
+
     /**
      * http://stackoverflow.com/a/5515960.
      * Calculate string size (utf8 string)
@@ -1245,8 +1271,8 @@ angular.module('chrome.http', [])
         }
         return str;
     };
-    
-    
+
+
     /**
      * Add |callback| as a listener for |type| events.
      * @param {string} type The type of the event.
@@ -1257,7 +1283,7 @@ angular.module('chrome.http', [])
      */
     ChromeTcpConnection.prototype.addEventListener = function(type, callback){
         this.assertEventType(type);
-        
+
         if (!this.listeners_[type])
             this.listeners_[type] = [];
         this.listeners_[type].push(callback);
@@ -1311,10 +1337,10 @@ angular.module('chrome.http', [])
             throw "Unknown event type: "+type;
         }
     };
-    
-    
-    
-    
+
+
+
+
     function HttpRequest(opts){
         this.listeners_ = {};
         if (opts && opts.load) {
@@ -1415,7 +1441,7 @@ angular.module('chrome.http', [])
     HttpRequest.prototype._load = function(e) {
         if(this.aborted) return;
         var response = e.response;
-        
+
         function finish(){
             var result = {
                 'redirects': this.redirect,
@@ -1426,7 +1452,7 @@ angular.module('chrome.http', [])
             };
             this.dispatchEvent('load', result);
         }
-        
+
         //check redirect
         if (response.status > 300 && response.status <= 307 && this.request.request.fallowredirects) {
             var location = response.getResponseHeader('Location');
@@ -1446,9 +1472,9 @@ angular.module('chrome.http', [])
             finish.call(this);
         }
     };
-    
-    
-    
+
+
+
     var service = {
         'create': function(props){
             return new HttpRequest(props);
